@@ -117,6 +117,15 @@
   --field: oklch(0.962 0.004 260);
   --raised: oklch(1 0 0);
   --raised-shadow: 0 0 0 1px oklch(0.2 0.02 260 / 0.11), 0 1px 2px oklch(0.2 0.02 260 / 0.07);
+
+  /* Mermaid syntax colors, read against --field. Lightness sits near 0.5 so
+     every hue clears 4.5:1; hue alone tells the token kinds apart. */
+  --code-keyword: oklch(0.5 0.17 260);
+  --code-text: oklch(0.5 0.12 150);
+  --code-label: oklch(0.52 0.12 60);
+  --code-property: oklch(0.5 0.16 310);
+  --code-operator: oklch(0.52 0.17 15);
+  --code-muted: var(--muted-foreground);
   --canvas-dot: oklch(0.2 0.02 260 / 0.16);
   --selection: oklch(0.6 0.19 259);
   --frame-shadow:
@@ -164,6 +173,14 @@
   --field: oklch(0.165 0.005 260);
   --raised: oklch(0.255 0.007 260);
   --raised-shadow: 0 0 0 1px oklch(0.33 0.008 260), 0 1px 2px oklch(0 0 0 / 0.3);
+
+  /* Same hues, lightness flipped for the dark field. */
+  --code-keyword: oklch(0.78 0.11 260);
+  --code-text: oklch(0.8 0.12 150);
+  --code-label: oklch(0.82 0.11 70);
+  --code-property: oklch(0.78 0.12 310);
+  --code-operator: oklch(0.76 0.13 15);
+  --code-muted: var(--muted-foreground);
   --canvas-dot: oklch(0.36 0.008 260);
   --selection: oklch(0.68 0.15 259);
   --frame-shadow:
@@ -208,6 +225,35 @@
   .studio[data-inspector="open"] {
     --inset-right: var(--inspector-w);
   }
+}
+
+/* Prism token classes from the Mermaid grammar, mapped to the code colors. */
+.code-highlight .token.comment,
+.code-highlight .token.punctuation {
+  color: var(--code-muted);
+}
+.code-highlight .token.keyword {
+  color: var(--code-keyword);
+}
+.code-highlight .token.text,
+.code-highlight .token.string {
+  color: var(--code-text);
+}
+.code-highlight .token.label,
+.code-highlight .token.inter-arrow-label,
+.code-highlight .token.important {
+  color: var(--code-label);
+}
+.code-highlight .token.property,
+.code-highlight .token.style,
+.code-highlight .token.entity,
+.code-highlight .token.annotation {
+  color: var(--code-property);
+}
+.code-highlight .token.arrow,
+.code-highlight .token.arrow-head,
+.code-highlight .token.operator {
+  color: var(--code-operator);
 }
 
 @layer base {

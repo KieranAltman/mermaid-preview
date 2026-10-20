@@ -1,7 +1,10 @@
 "use client"
 
+import { useMemo } from "react"
+
 import { RenderStatus } from "@/components/editor/render-status"
 import { toggleEditor } from "@/lib/editor"
+import { highlightMermaid } from "@/lib/highlight"
 import { useCanvasStore, type Diagram } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
@@ -10,6 +13,8 @@ export function CodePreview({ diagram }: { diagram: Diagram }) {
   const open = useCanvasStore((s) => s.editorOpen)
   const lines = diagram.code.split("\n")
   const label = open ? "收起代码编辑器" : "编辑代码"
+  const head = lines.slice(0, 6).join("\n")
+  const html = useMemo(() => highlightMermaid(head), [head])
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -29,10 +34,9 @@ export function CodePreview({ diagram }: { diagram: Diagram }) {
       >
         <pre
           aria-hidden
-          className="max-h-[7.75rem] overflow-hidden px-3 pt-2 pb-8 font-mono text-xs leading-5 text-muted-foreground mask-b-from-50% mask-b-to-100%"
-        >
-          {lines.slice(0, 6).join("\n")}
-        </pre>
+          className="code-highlight max-h-[7.75rem] overflow-hidden px-3 pt-2 pb-8 font-mono text-xs leading-5 text-foreground/80 mask-b-from-50% mask-b-to-100% [font-variant-ligatures:none]"
+          dangerouslySetInnerHTML={{ __html: html }}
+        />
         <span
           aria-hidden
           className="absolute right-2 bottom-2 flex items-center gap-1.5 rounded-md bg-raised px-2 py-1 text-xs font-medium text-foreground shadow-(--raised-shadow)"
