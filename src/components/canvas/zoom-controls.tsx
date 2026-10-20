@@ -1,12 +1,13 @@
 "use client"
 
 import type { ReactElement } from "react"
-import { Minus, Plus, Scan } from "lucide-react"
+import { Minus, PencilLine, Plus, Scan } from "lucide-react"
 
 import { followPanelMotion } from "@/components/panel/panel-chrome"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
+import { setLook } from "@/lib/look"
 import { modKey } from "@/lib/platform"
 import { useCanvasStore } from "@/lib/store"
 import { cn } from "@/lib/utils"
@@ -31,6 +32,7 @@ function Hint({ label, keys, children }: { label: string; keys: string[]; childr
 export function ZoomControls() {
   const zoom = useCanvasStore((s) => s.viewport.zoom)
   const inspectorOpen = useCanvasStore((s) => s.panels.inspector)
+  const handDrawn = useCanvasStore((s) => s.settings.look === "hand-drawn")
 
   return (
     <div
@@ -68,6 +70,24 @@ export function ZoomControls() {
           <Scan />
         </Button>
       </Hint>
+      <div className="mx-0.5 h-4 w-px bg-border" />
+      <Tooltip>
+        <TooltipTrigger
+          render={
+            <Button
+              variant="ghost"
+              size="icon-sm"
+              aria-label="手绘风格"
+              aria-pressed={handDrawn}
+              onClick={() => setLook(handDrawn ? "classic" : "hand-drawn")}
+              className="aria-pressed:bg-muted aria-pressed:text-foreground"
+            />
+          }
+        >
+          <PencilLine />
+        </TooltipTrigger>
+        <TooltipContent side="top">{handDrawn ? "切换为经典风格" : "切换为手绘风格"}</TooltipContent>
+      </Tooltip>
     </div>
   )
 }

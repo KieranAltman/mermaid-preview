@@ -256,6 +256,22 @@
   color: var(--code-operator);
 }
 
+/* Keep in sync with squareCornersCss and handDrawnCss, which exports embed.
+   Plain `[text]` boxes are square; `(text)` and other rounded shapes carry
+   their own radius and keep it. */
+.pele {
+  --pele-radius: 0px;
+}
+/* Hand-drawn labels draw in the font Pele measured them with (HAND_FONT),
+   overriding the app font above. Recursive's casual forms keep every glyph's
+   width, so the layout holds. */
+.pele[data-look="hand-drawn"] {
+  --pele-font: "Recursive Variable", arial, sans-serif;
+}
+.pele[data-look="hand-drawn"] text {
+  font-variation-settings: "CASL" 1;
+}
+
 @layer base {
   /* Pele measures labels with this font, so the SVG must draw with it too. */
   .pele {

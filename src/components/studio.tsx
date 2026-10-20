@@ -7,6 +7,7 @@ import { CodeDock } from "@/components/editor/code-dock"
 import { InspectorPanel } from "@/components/panel/inspector-panel"
 import { LayersPanel } from "@/components/panel/layers-panel"
 import { PanelToggle } from "@/components/panel/panel-toggle"
+import { loadHandFont } from "@/lib/look"
 import { DESKTOP_QUERY, PANEL_WIDTH, useCanvasStore } from "@/lib/store"
 
 function isFirstVisit() {
@@ -50,6 +51,7 @@ export default function Studio() {
     ])
       .catch(() => undefined)
       .then(() => useCanvasStore.getState().setFonts({ sans, mono }))
+    if (useCanvasStore.getState().settings.look === "hand-drawn") void loadHandFont()
   }, [])
 
   return (

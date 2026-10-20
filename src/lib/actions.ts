@@ -26,27 +26,27 @@ type ExportInput = {
   vars: PeleVars
 }
 
-function standalone({ code, settings, vars }: ExportInput) {
-  const output = exportSvg(code, settings, vars)
+async function standalone({ code, settings, vars }: ExportInput) {
+  const output = await exportSvg(code, settings, vars)
   if (!output) toast.error("图表有语法错误，修复后才能导出")
   return output
 }
 
 export async function copySvg(input: ExportInput) {
-  const output = standalone(input)
+  const output = await standalone(input)
   if (!output) return
   await navigator.clipboard.writeText(output.svg)
   toast.success("SVG 已复制到剪贴板")
 }
 
-export function downloadSvg(input: ExportInput) {
-  const output = standalone(input)
+export async function downloadSvg(input: ExportInput) {
+  const output = await standalone(input)
   if (!output) return
   downloadBlob(new Blob([output.svg], { type: "image/svg+xml" }), fileName(input.title, "svg"))
 }
 
 export async function downloadPng(input: ExportInput) {
-  const output = standalone(input)
+  const output = await standalone(input)
   if (!output) return
   try {
     const blob = await svgToPng(output.svg, output.width, output.height, input.vars["--pele-bg"])
