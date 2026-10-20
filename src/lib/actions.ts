@@ -4,12 +4,13 @@ import { downloadBlob, exportSvg, svgToPng, type RenderSettings } from "@/lib/pe
 import { useCanvasStore } from "@/lib/store"
 import type { PeleVars } from "@/lib/themes"
 
-export function deleteDiagram(id: string) {
-  const { removeDiagram, restoreDiagram } = useCanvasStore.getState()
-  const removed = removeDiagram(id)
-  if (!removed) return
-  toast(`已删除「${removed.title}」`, {
-    action: { label: "撤销", onClick: () => restoreDiagram(removed) },
+export function deleteDiagrams(ids: string[]) {
+  const { removeDiagrams, restoreDiagrams } = useCanvasStore.getState()
+  const removed = removeDiagrams(ids)
+  if (removed.length === 0) return
+  const message = removed.length === 1 ? `已删除「${removed[0].title}」` : `已删除 ${removed.length} 张图表`
+  toast(message, {
+    action: { label: "撤销", onClick: () => restoreDiagrams(removed) },
   })
 }
 

@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils"
 
 export const DiagramCard = memo(function DiagramCard({ id }: { id: string }) {
   const diagram = useCanvasStore((s) => s.diagrams.find((d) => d.id === id))
-  const selected = useCanvasStore((s) => s.selectedId === id)
+  const selected = useCanvasStore((s) => s.selectedIds.includes(id))
   const entering = useCanvasStore((s) => s.enteringId === id)
   const setSize = useCanvasStore((s) => s.setSize)
   const output = useDiagramRender(diagram?.code ?? "")

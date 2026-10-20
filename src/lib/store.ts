@@ -36,6 +36,10 @@ export type PanelSide = "layers" | "inspector"
 
 type State = {
   diagrams: Diagram[]
+  // Every selected diagram, in selection order.
+  selectedIds: string[]
+  // The one diagram the inspector and editor work on: set only when exactly
+  // one is selected.
   selectedId: string | null
   topZ: number
   viewport: Viewport
@@ -60,10 +64,13 @@ type Actions = {
   }) => string
   updateDiagram: (id: string, patch: Partial<Omit<Diagram, "id">>) => void
   moveDiagram: (id: string, x: number, y: number) => void
-  removeDiagram: (id: string) => Diagram | undefined
-  restoreDiagram: (diagram: Diagram) => void
+  moveDiagrams: (positions: Record<string, { x: number; y: number }>) => void
+  removeDiagrams: (ids: string[]) => Diagram[]
+  restoreDiagrams: (diagrams: Diagram[]) => void
   duplicateDiagram: (id: string, options?: { animate?: boolean }) => string | undefined
   select: (id: string | null) => void
+  setSelection: (ids: string[]) => void
+  toggleSelection: (id: string) => void
   setViewport: (viewport: Viewport) => void
   zoomAt: (zoom: number, point: { x: number; y: number }) => void
   updateSettings: (patch: Partial<Settings>) => void
@@ -96,6 +103,10 @@ export function visibleArea({
 
 export const snap = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE
 
+function selection(ids: string[]) {
+  return { selectedIds: ids, selectedId: ids.length === 1 ? ids[0] : null }
+}
+
 function nextTitle(diagrams: Diagram[]) {
   let n = diagrams.length + 1
   while (diagrams.some((d) => d.title === `图表 ${n}`)) n++
@@ -117,8 +128,8 @@ const seed: Diagram[] = [
     id: "welcome",
     title: "欢迎",
     code: `flowchart LR
-  A[双击空白处] --> B[新建图表]
-  B --> C[在底部编辑代码]
+  A[新建图表] --> B[在底部编辑代码]
+  B --> C[双击图表居中]
   C --> D[拖拽整理画布]`,
     x: 96,
     y: 96,
@@ -138,7 +149,7 @@ export const useCanvasStore = create<State & Actions>()(
   persist(
     (set, get) => ({
       diagrams: seed,
-      selectedId: "welcome",
+      ...selection(["welcome"]),
       topZ: seed.length,
       viewport: { x: 0, y: 0, zoom: 1 },
       settings: {
@@ -176,7 +187,7 @@ export const useCanvasStore = create<State & Actions>()(
         }
         set({
           diagrams: [...diagrams, diagram],
-          selectedId: id,
+          ...selection([id]),
           topZ: topZ + 1,
           enteringId: input.animate === false ? null : id,
         })
@@ -193,20 +204,26 @@ export const useCanvasStore = create<State & Actions>()(
           diagrams: state.diagrams.map((d) => (d.id === id ? { ...d, x, y } : d)),
         })),
 
-      removeDiagram: (id) => {
-        const diagram = get().diagrams.find((d) => d.id === id)
+      moveDiagrams: (positions) =>
         set((state) => ({
-          diagrams: state.diagrams.filter((d) => d.id !== id),
-          selectedId: state.selectedId === id ? null : state.selectedId,
+          diagrams: state.diagrams.map((d) => (positions[d.id] ? { ...d, ...positions[d.id] } : d)),
+        })),
+
+      removeDiagrams: (ids) => {
+        const removed = get().diagrams.filter((d) => ids.includes(d.id))
+        set((state) => ({
+          diagrams: state.diagrams.filter((d) => !ids.includes(d.id)),
+          ...selection(state.selectedIds.filter((id) => !ids.includes(id))),
         }))
-        return diagram
+        return removed
       },
 
-      restoreDiagram: (diagram) =>
+      restoreDiagrams: (restored) =>
         set((state) => ({
-          diagrams: [...state.diagrams, diagram],
-          selectedId: diagram.id,
-          enteringId: diagram.id,
+          diagrams: [...state.diagrams, ...restored],
+          ...selection(restored.map((d) => d.id)),
+          // A single undo plays the card's entrance; a batch just reappears.
+          enteringId: restored.length === 1 ? restored[0].id : null,
         })),
 
       duplicateDiagram: (id, options = {}) => {
@@ -222,10 +239,27 @@ export const useCanvasStore = create<State & Actions>()(
 
       select: (id) =>
         set((state) => {
-          if (id === null) return { selectedId: null }
+          if (id === null) return selection([])
           const topZ = state.topZ + 1
           return {
-            selectedId: id,
+            ...selection([id]),
+            topZ,
+            diagrams: state.diagrams.map((d) => (d.id === id ? { ...d, z: topZ } : d)),
+          }
+        }),
+
+      setSelection: (ids) =>
+        set((state) => {
+          const same = ids.length === state.selectedIds.length && ids.every((id, i) => id === state.selectedIds[i])
+          return same ? {} : selection(ids)
+        }),
+
+      toggleSelection: (id) =>
+        set((state) => {
+          if (state.selectedIds.includes(id)) return selection(state.selectedIds.filter((s) => s !== id))
+          const topZ = state.topZ + 1
+          return {
+            ...selection([...state.selectedIds, id]),
             topZ,
             diagrams: state.diagrams.map((d) => (d.id === id ? { ...d, z: topZ } : d)),
           }
@@ -266,7 +300,7 @@ export const useCanvasStore = create<State & Actions>()(
     }),
     {
       name: "mermaid-canvas",
-      version: 3,
+      version: 4,
       migrate: (persisted, version) => {
         let state = persisted as Record<string, unknown>
         if (version < 2) {
@@ -281,10 +315,16 @@ export const useCanvasStore = create<State & Actions>()(
           const viewport = state.viewport as Viewport
           if (panels.layers) state = { ...state, viewport: { ...viewport, x: viewport.x + PANEL_WIDTH.layers } }
         }
+        if (version < 4) {
+          // v3 kept a single selection; v4 keeps a list.
+          const selectedId = state.selectedId as string | null
+          state = { ...state, selectedIds: selectedId ? [selectedId] : [] }
+        }
         return state
       },
-      partialize: ({ diagrams, selectedId, topZ, viewport, settings, panels, editorHeight }) => ({
+      partialize: ({ diagrams, selectedIds, selectedId, topZ, viewport, settings, panels, editorHeight }) => ({
         diagrams,
+        selectedIds,
         selectedId,
         topZ,
         viewport,
