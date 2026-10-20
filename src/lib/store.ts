@@ -1,6 +1,7 @@
 import { create } from "zustand"
 import { persist } from "zustand/middleware"
 
+import type { Look } from "@/lib/pele"
 import { defaultTemplate, templates } from "@/lib/templates"
 
 export const GRID_SIZE = 24
@@ -28,6 +29,7 @@ export type Settings = {
   padding: number
   showGrid: boolean
   snapToGrid: boolean
+  look: Look
 }
 
 type Size = { width: number; height: number }
@@ -50,6 +52,8 @@ type State = {
   canvasSize: Size
   sizes: Record<string, Size>
   fonts: { sans: string; mono: string } | null
+  // Recursive loads on first use of the hand-drawn look; Pele measures with it.
+  handFontReady: boolean
   editorOpen: boolean
   // The diagram that should play its enter animation; null on page load.
   enteringId: string | null
@@ -80,6 +84,7 @@ type Actions = {
   setCanvasSize: (size: Size) => void
   setSize: (id: string, size: Size) => void
   setFonts: (fonts: { sans: string; mono: string }) => void
+  setHandFontReady: () => void
 }
 
 const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
@@ -158,12 +163,14 @@ export const useCanvasStore = create<State & Actions>()(
         padding: 16,
         showGrid: true,
         snapToGrid: false,
+        look: "classic",
       },
       panels: { layers: true, inspector: true },
       editorHeight: 300,
       canvasSize: { width: 0, height: 0 },
       sizes: {},
       fonts: null,
+      handFontReady: false,
       editorOpen: false,
       enteringId: null,
 
@@ -295,12 +302,13 @@ export const useCanvasStore = create<State & Actions>()(
       setCanvasSize: (canvasSize) => set({ canvasSize }),
       setSize: (id, size) => set((state) => ({ sizes: { ...state.sizes, [id]: size } })),
       setFonts: (fonts) => set({ fonts }),
+      setHandFontReady: () => set({ handFontReady: true }),
       setEditorOpen: (editorOpen) => set({ editorOpen }),
       setEditorHeight: (editorHeight) => set({ editorHeight }),
     }),
     {
       name: "mermaid-canvas",
-      version: 4,
+      version: 5,
       migrate: (persisted, version) => {
         let state = persisted as Record<string, unknown>
         if (version < 2) {
@@ -319,6 +327,10 @@ export const useCanvasStore = create<State & Actions>()(
           // v3 kept a single selection; v4 keeps a list.
           const selectedId = state.selectedId as string | null
           state = { ...state, selectedIds: selectedId ? [selectedId] : [] }
+        }
+        if (version < 5) {
+          // v5 adds the hand-drawn look; everything saved before was classic.
+          state = { ...state, settings: { ...(state.settings as Settings), look: "classic" } }
         }
         return state
       },
