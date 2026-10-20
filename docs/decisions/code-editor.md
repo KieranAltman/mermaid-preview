@@ -19,8 +19,9 @@ canvas settings. The inspector stays 320px wide, so the editor moved out of it.
 - Slides on `translate` with the drawer recipe: 300ms in, 200ms out,
   `--ease-drawer`. Inert while closed. Resizable from a top handle
   (drag, or ↑/↓ on the focused handle), 160px to 70% of the window.
-- Opens from the inspector's code preview, by double-clicking a card, or with
-  Enter on a selected card. Esc closes it and returns focus.
+- Opens from the inspector's code preview or with Enter on a selected card.
+  Esc closes it and returns focus. (Double-clicking a card first opened it;
+  that gesture now centers and fits the card instead.)
 - The inspector keeps a compact preview of the first lines (852px instead of
   1580px for the same diagram).
 

@@ -15,7 +15,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDiagramRender, useDiagramVars, useRenderSettings } from "@/hooks/use-diagram"
-import { copyCode, copySvg, deleteDiagram, downloadPng, downloadSvg } from "@/lib/actions"
+import { copyCode, copySvg, deleteDiagrams, downloadPng, downloadSvg } from "@/lib/actions"
 import { useCanvasStore, type Diagram } from "@/lib/store"
 import { focusDiagram } from "@/lib/viewport"
 
@@ -92,7 +92,7 @@ export function DiagramEditor({ diagram }: { diagram: Diagram }) {
         <div className="flex-1" />
         <IconAction
           label="删除图表"
-          onClick={() => deleteDiagram(diagram.id)}
+          onClick={() => deleteDiagrams([diagram.id])}
           className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 />

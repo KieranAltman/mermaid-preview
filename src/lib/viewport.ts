@@ -100,6 +100,21 @@ export function focusDiagram(id: string, options: CameraOptions = {}) {
   moveCamera(target, options, TRAVEL)
 }
 
+// Fitting a small diagram stops here; past it, labels just get big.
+const FIT_MAX_ZOOM = 2
+
+/**
+ * Centers the diagram in the uncovered canvas at the zoom where it fits whole:
+ * a wide diagram fills the width, a tall one the height.
+ */
+export function fitDiagram(id: string, options: CameraOptions = {}) {
+  const { diagrams, sizes } = useCanvasStore.getState()
+  const diagram = diagrams.find((d) => d.id === id)
+  if (!diagram) return
+  const size = sizes[id] ?? FALLBACK_SIZE
+  moveCamera(fitBounds({ x: diagram.x, y: diagram.y, ...size }, FIT_MAX_ZOOM), options, TRAVEL)
+}
+
 export function fitAll(options: CameraOptions = {}) {
   const { diagrams, sizes } = useCanvasStore.getState()
   if (diagrams.length === 0) {

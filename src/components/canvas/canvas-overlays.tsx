@@ -15,7 +15,7 @@ export function CanvasEmptyState() {
         <div className="flex flex-col gap-1">
           <h2 className="text-sm font-medium">画布还是空的</h2>
           <p className="text-sm text-balance text-muted-foreground">
-            双击任意空白处创建流程图，或从模板开始。
+            从一个模板新建第一张图表。
           </p>
         </div>
         <NewDiagramMenu />
@@ -35,8 +35,11 @@ export function CanvasHints() {
         followPanelMotion
       )}
     >
-      <span>双击空白处新建</span>
-      <span>拖拽空白处平移</span>
+      <span>双击图表居中</span>
+      <span>拖拽空白处框选</span>
+      <span className="flex items-center gap-1">
+        <Kbd>空格</Kbd> + 拖拽平移
+      </span>
       <span className="flex items-center gap-1">
         <Kbd>{modKey}</Kbd> + 滚轮缩放
       </span>

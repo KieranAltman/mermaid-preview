@@ -21,6 +21,7 @@ export function CodeDock() {
   const height = useCanvasStore((s) => s.editorHeight)
   const setHeight = useCanvasStore((s) => s.setEditorHeight)
   const diagram = useCanvasStore((s) => s.diagrams.find((d) => d.id === s.selectedId))
+  const selectionCount = useCanvasStore((s) => s.selectedIds.length)
   const updateDiagram = useCanvasStore((s) => s.updateDiagram)
   const output = useDiagramRender(diagram?.code ?? "")
 
@@ -100,7 +101,11 @@ export function CodeDock() {
           className="flex-1"
         />
       ) : (
-        <p className="m-auto p-4 text-sm text-muted-foreground">在画布上选择一张图表，它的代码会显示在这里。</p>
+        <p className="m-auto p-4 text-sm text-muted-foreground">
+          {selectionCount > 1
+            ? `已选择 ${selectionCount} 张图表，选择其中一张来编辑代码。`
+            : "在画布上选择一张图表，它的代码会显示在这里。"}
+        </p>
       )}
     </section>
   )

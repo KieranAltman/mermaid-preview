@@ -7,18 +7,40 @@ import { DiagramCard } from "@/components/canvas/diagram-card"
 import { ZoomControls } from "@/components/canvas/zoom-controls"
 import { CanvasEmptyState, CanvasHints } from "@/components/canvas/canvas-overlays"
 import { useDiagramVars } from "@/hooks/use-diagram"
-import { deleteDiagram } from "@/lib/actions"
+import { deleteDiagrams } from "@/lib/actions"
 import { openEditor } from "@/lib/editor"
 import { GRID_SIZE, MAX_ZOOM, MIN_ZOOM, snap, useCanvasStore } from "@/lib/store"
-import { fitAll, focusDiagram, resetZoom, stopViewportAnimation, zoomBy } from "@/lib/viewport"
+import { fitAll, fitDiagram, focusDiagram, resetZoom, stopViewportAnimation, zoomBy } from "@/lib/viewport"
 import { cn } from "@/lib/utils"
 
 type Point = { x: number; y: number }
+type Rect = { x: number; y: number; width: number; height: number }
 
 type Gesture =
   | { kind: "pan"; pointerId: number; start: Point; origin: Point; moved: boolean }
-  | { kind: "drag"; pointerId: number; id: string; start: Point; origin: Point; moved: boolean }
+  | {
+      kind: "drag"
+      pointerId: number
+      // The card under the pointer; snapping follows it and the rest keep their offsets.
+      id: string
+      start: Point
+      origins: Record<string, Point>
+      moved: boolean
+      // A plain click on one card of a multi-selection narrows it to that card.
+      narrowTo: string | null
+    }
+  | { kind: "marquee"; pointerId: number; start: Point; base: string[]; moved: boolean }
   | { kind: "pinch"; startDistance: number; startZoom: number; anchor: Point }
+
+// Cards report their size after the first render; until then, assume this.
+const FALLBACK_SIZE = { width: 320, height: 160 }
+
+const rectFrom = (a: Point, b: Point): Rect => ({
+  x: Math.min(a.x, b.x),
+  y: Math.min(a.y, b.y),
+  width: Math.abs(a.x - b.x),
+  height: Math.abs(a.y - b.y),
+})
 
 // Pixels a pointer has to travel before a press counts as a drag, not a click.
 const DRAG_THRESHOLD = 3
@@ -41,6 +63,8 @@ export function Canvas() {
   const pointers = useRef(new Map<number, Point>())
   const [spaceHeld, setSpaceHeld] = useState(false)
   const [panning, setPanning] = useState(false)
+  // The selection rectangle being dragged out, in canvas coordinates.
+  const [marquee, setMarquee] = useState<Rect | null>(null)
 
   const ids = useCanvasStore(useShallow((s) => s.diagrams.map((d) => d.id)))
   const viewport = useCanvasStore((s) => s.viewport)
@@ -117,11 +141,14 @@ export function Canvas() {
       if (isEditable(event.target)) return
       const store = useCanvasStore.getState()
       const mod = event.metaKey || event.ctrlKey
+      // The single selected diagram, for actions that only make sense on one.
       const selected = store.diagrams.find((d) => d.id === store.selectedId)
+      const selectedIds = store.selectedIds
       // Shortcuts act instantly; animation would lag behind fast keyboard input.
       const instant = { animate: false }
 
-      if (event.code === "Space") {
+      // Space on a focused button or menu item still activates it.
+      if (event.code === "Space" && !isControl(event.target)) {
         event.preventDefault()
         setSpaceHeld(true)
       } else if (mod && (event.key === "=" || event.key === "+")) {
@@ -138,24 +165,33 @@ export function Canvas() {
       } else if (event.shiftKey && event.code === "Digit2" && selected) {
         focusDiagram(selected.id, instant)
       } else if (event.key === "Escape") {
-        store.select(null)
-      } else if (!selected) {
-        return
-      } else if (event.key === "Enter" && !isControl(event.target)) {
+        store.setSelection([])
+      } else if (mod && event.key.toLowerCase() === "a") {
         event.preventDefault()
-        openEditor()
+        store.setSelection(store.diagrams.map((d) => d.id))
+      } else if (selectedIds.length === 0) {
+        return
       } else if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault()
-        deleteDiagram(selected.id)
-      } else if (mod && event.key.toLowerCase() === "d") {
-        event.preventDefault()
-        store.duplicateDiagram(selected.id, instant)
+        deleteDiagrams(selectedIds)
       } else if (event.key.startsWith("Arrow")) {
         event.preventDefault()
         const step = store.settings.snapToGrid ? GRID_SIZE : event.shiftKey ? 10 : 1
         const dx = event.key === "ArrowLeft" ? -step : event.key === "ArrowRight" ? step : 0
         const dy = event.key === "ArrowUp" ? -step : event.key === "ArrowDown" ? step : 0
-        store.moveDiagram(selected.id, selected.x + dx, selected.y + dy)
+        store.moveDiagrams(
+          Object.fromEntries(
+            store.diagrams.filter((d) => selectedIds.includes(d.id)).map((d) => [d.id, { x: d.x + dx, y: d.y + dy }])
+          )
+        )
+      } else if (!selected) {
+        return
+      } else if (event.key === "Enter" && !isControl(event.target)) {
+        event.preventDefault()
+        openEditor()
+      } else if (mod && event.key.toLowerCase() === "d") {
+        event.preventDefault()
+        store.duplicateDiagram(selected.id, instant)
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {
@@ -173,6 +209,12 @@ export function Canvas() {
   }, [])
 
   const startPinch = () => {
+    const current = gesture.current
+    // A second finger turns a selection drag into a pinch; drop the marquee.
+    if (current?.kind === "marquee") {
+      useCanvasStore.getState().setSelection(current.base)
+      setMarquee(null)
+    }
     const [a, b] = [...pointers.current.values()]
     const { viewport } = useCanvasStore.getState()
     const mid = { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 }
@@ -185,8 +227,24 @@ export function Canvas() {
     }
   }
 
+  /** Diagrams whose card overlaps the rectangle (canvas coordinates). */
+  const diagramsIn = (rect: Rect) => {
+    const { diagrams, sizes, viewport } = useCanvasStore.getState()
+    const left = (rect.x - viewport.x) / viewport.zoom
+    const top = (rect.y - viewport.y) / viewport.zoom
+    const right = left + rect.width / viewport.zoom
+    const bottom = top + rect.height / viewport.zoom
+    return diagrams
+      .filter((d) => {
+        const size = sizes[d.id] ?? FALLBACK_SIZE
+        return d.x < right && d.x + size.width > left && d.y < bottom && d.y + size.height > top
+      })
+      .map((d) => d.id)
+  }
+
   const onPointerDown = (event: React.PointerEvent) => {
     if (event.target instanceof Element && event.target.closest("[data-canvas-ui]")) return
+    if (event.button === 2) return
     stopViewportAnimation()
     const point = toLocal(event)
     pointers.current.set(event.pointerId, point)
@@ -198,35 +256,49 @@ export function Canvas() {
     }
     if (pointers.current.size > 2) return
 
-    const { viewport, diagrams, select } = useCanvasStore.getState()
-    const card = (event.target as Element).closest<HTMLElement>("[data-diagram-id]")
-    const wantsPan = event.button === 1 || spaceHeld || !card
+    const store = useCanvasStore.getState()
 
-    if (event.button === 2) return
-    if (wantsPan) {
+    // Space or the middle button pans, wherever the press lands.
+    if (event.button === 1 || spaceHeld) {
       event.preventDefault()
       gesture.current = {
         kind: "pan",
         pointerId: event.pointerId,
         start: point,
-        origin: { x: viewport.x, y: viewport.y },
+        origin: { x: store.viewport.x, y: store.viewport.y },
         moved: false,
       }
       setPanning(true)
       return
     }
 
-    const id = card!.dataset.diagramId!
-    const diagram = diagrams.find((d) => d.id === id)!
-    select(id)
-    gesture.current = {
-      kind: "drag",
-      pointerId: event.pointerId,
-      id,
-      start: point,
-      origin: { x: diagram.x, y: diagram.y },
-      moved: false,
+    const card = (event.target as Element).closest<HTMLElement>("[data-diagram-id]")
+    if (!card) {
+      // Empty canvas: drag out a selection. Shift adds to what's selected.
+      const base = event.shiftKey ? store.selectedIds : []
+      store.setSelection(base)
+      gesture.current = { kind: "marquee", pointerId: event.pointerId, start: point, base, moved: false }
+      return
     }
+
+    const id = card.dataset.diagramId!
+    let narrowTo: string | null = null
+    if (event.shiftKey) {
+      store.toggleSelection(id)
+      // Shift-clicking a card out of the selection leaves nothing to drag.
+      if (!useCanvasStore.getState().selectedIds.includes(id)) return
+    } else if (store.selectedIds.includes(id) && store.selectedIds.length > 1) {
+      // Keep the group so it can be dragged together.
+      narrowTo = id
+    } else {
+      store.select(id)
+    }
+
+    const { diagrams, selectedIds } = useCanvasStore.getState()
+    const origins = Object.fromEntries(
+      diagrams.filter((d) => selectedIds.includes(d.id)).map((d) => [d.id, { x: d.x, y: d.y }])
+    )
+    gesture.current = { kind: "drag", pointerId: event.pointerId, id, start: point, origins, moved: false, narrowTo }
   }
 
   const onPointerMove = (event: React.PointerEvent) => {
@@ -254,14 +326,27 @@ export function Canvas() {
 
     if (current.kind === "pan") {
       store.setViewport({ ...store.viewport, x: current.origin.x + dx, y: current.origin.y + dy })
+    } else if (current.kind === "marquee") {
+      const rect = rectFrom(current.start, point)
+      setMarquee(rect)
+      const hits = diagramsIn(rect)
+      store.setSelection([...current.base, ...hits.filter((id) => !current.base.includes(id))])
     } else {
-      let x = current.origin.x + dx / store.viewport.zoom
-      let y = current.origin.y + dy / store.viewport.zoom
+      // Move the grabbed card (snapping it if asked), then shift the rest by the same amount.
+      const origin = current.origins[current.id]
+      let x = origin.x + dx / store.viewport.zoom
+      let y = origin.y + dy / store.viewport.zoom
       if (store.settings.snapToGrid) {
         x = snap(x)
         y = snap(y)
       }
-      store.moveDiagram(current.id, Math.round(x), Math.round(y))
+      const shiftX = Math.round(x) - origin.x
+      const shiftY = Math.round(y) - origin.y
+      store.moveDiagrams(
+        Object.fromEntries(
+          Object.entries(current.origins).map(([id, o]) => [id, { x: o.x + shiftX, y: o.y + shiftY }])
+        )
+      )
     }
   }
 
@@ -274,11 +359,12 @@ export function Canvas() {
       return
     }
     if (current && event.pointerId === current.pointerId) {
-      if (current.kind === "pan" && !current.moved && event.type === "pointerup") {
-        useCanvasStore.getState().select(null)
+      if (current.kind === "drag" && !current.moved && current.narrowTo && event.type === "pointerup") {
+        useCanvasStore.getState().select(current.narrowTo)
       }
       gesture.current = null
       setPanning(false)
+      setMarquee(null)
     }
   }
 
@@ -287,18 +373,7 @@ export function Canvas() {
     const target = document.elementFromPoint(event.clientX, event.clientY)
     if (!target || target.closest("[data-canvas-ui]")) return
     const card = target.closest<HTMLElement>("[data-diagram-id]")
-    if (card) {
-      openEditor()
-      return
-    }
-    const point = toLocal(event)
-    const { viewport, addDiagram } = useCanvasStore.getState()
-    addDiagram({
-      at: {
-        x: (point.x - viewport.x) / viewport.zoom - 24,
-        y: (point.y - viewport.y) / viewport.zoom - 24,
-      },
-    })
+    if (card) fitDiagram(card.dataset.diagramId!)
   }
 
   // Thin the dots out when zoomed far out, so the grid never turns to noise.
@@ -344,6 +419,13 @@ export function Canvas() {
         ))}
       </div>
 
+      {marquee && (
+        <div
+          aria-hidden
+          className="pointer-events-none absolute border border-selection bg-selection/8"
+          style={{ left: marquee.x, top: marquee.y, width: marquee.width, height: marquee.height }}
+        />
+      )}
       {ids.length === 0 && <CanvasEmptyState />}
       <CanvasHints />
       <ZoomControls />
