@@ -313,7 +313,7 @@ export function Canvas() {
       ref={rootRef}
       aria-label="画布"
       className={cn(
-        "relative isolate min-w-0 flex-1 touch-none overflow-hidden bg-canvas select-none",
+        "absolute inset-0 isolate touch-none overflow-hidden bg-canvas select-none",
         panning ? "cursor-grabbing" : spaceHeld ? "cursor-grab" : "cursor-default"
       )}
       style={style}

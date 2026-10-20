@@ -1,22 +1,38 @@
 "use client"
 
-import { useEffect, useLayoutEffect } from "react"
+import { useEffect, useLayoutEffect, useState } from "react"
 
 import { Canvas } from "@/components/canvas/canvas"
 import { InspectorPanel } from "@/components/panel/inspector-panel"
 import { LayersPanel } from "@/components/panel/layers-panel"
-import { useCanvasStore } from "@/lib/store"
+import { PanelToggle } from "@/components/panel/panel-toggle"
+import { DESKTOP_QUERY, PANEL_WIDTH, useCanvasStore } from "@/lib/store"
+
+function isFirstVisit() {
+  try {
+    return localStorage.getItem("mermaid-canvas") === null
+  } catch {
+    return false
+  }
+}
 
 export default function Studio() {
   const panels = useCanvasStore((s) => s.panels)
+  // Panel motion stays off until after the first paint, so nothing slides in on load.
+  const [ready, setReady] = useState(false)
 
   useLayoutEffect(() => {
-    // Both panels together would cover a phone screen; start with the canvas.
-    if (window.matchMedia("(max-width: 767px)").matches) {
-      const { setPanel } = useCanvasStore.getState()
-      setPanel("layers", false)
-      setPanel("inspector", false)
+    const store = useCanvasStore.getState()
+    if (!window.matchMedia(DESKTOP_QUERY).matches) {
+      // Both panels together would cover a phone screen; start with the canvas.
+      store.setPanel("layers", false)
+      store.setPanel("inspector", false)
+    } else if (isFirstVisit() && store.panels.layers) {
+      // The canvas runs under the docked layers panel; start the camera beside it.
+      store.setViewport({ ...store.viewport, x: PANEL_WIDTH.layers })
     }
+    const frame = requestAnimationFrame(() => setReady(true))
+    return () => cancelAnimationFrame(frame)
   }, [])
 
   useEffect(() => {
@@ -34,10 +50,17 @@ export default function Studio() {
   }, [])
 
   return (
-    <div className="relative flex h-dvh overflow-hidden">
-      {panels.layers && <LayersPanel />}
+    <div
+      className="studio group/studio relative h-dvh overflow-hidden"
+      data-ready={ready}
+      data-layers={panels.layers ? "open" : "closed"}
+      data-inspector={panels.inspector ? "open" : "closed"}
+    >
+      <PanelToggle side="layers" />
+      <LayersPanel />
       <Canvas />
-      {panels.inspector && <InspectorPanel />}
+      <PanelToggle side="inspector" />
+      <InspectorPanel />
     </div>
   )
 }

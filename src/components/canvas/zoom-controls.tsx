@@ -3,11 +3,13 @@
 import type { ReactElement } from "react"
 import { Minus, Plus, Scan } from "lucide-react"
 
+import { followPanelMotion } from "@/components/panel/panel-chrome"
 import { Button } from "@/components/ui/button"
 import { Kbd, KbdGroup } from "@/components/ui/kbd"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { modKey } from "@/lib/platform"
 import { useCanvasStore } from "@/lib/store"
+import { cn } from "@/lib/utils"
 import { fitAll, resetZoom, zoomBy } from "@/lib/viewport"
 
 function Hint({ label, keys, children }: { label: string; keys: string[]; children: ReactElement }) {
@@ -28,11 +30,16 @@ function Hint({ label, keys, children }: { label: string; keys: string[]; childr
 
 export function ZoomControls() {
   const zoom = useCanvasStore((s) => s.viewport.zoom)
+  const inspectorOpen = useCanvasStore((s) => s.panels.inspector)
 
   return (
     <div
       data-canvas-ui
-      className="absolute right-4 bottom-4 flex items-center gap-0.5 rounded-lg bg-background p-0.5 shadow-(--frame-shadow)"
+      data-state={inspectorOpen ? "open" : "closed"}
+      className={cn(
+        "absolute right-4 bottom-4 flex -translate-x-(--inset-right) items-center gap-0.5 rounded-lg bg-background p-0.5 shadow-(--frame-shadow)",
+        followPanelMotion
+      )}
     >
       <Hint label="缩小" keys={[modKey, "−"]}>
         <Button variant="ghost" size="icon-sm" aria-label="缩小" onClick={() => zoomBy(0.8)}>

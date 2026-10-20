@@ -6,8 +6,10 @@ import { defaultTemplate, templates } from "@/lib/templates"
 export const GRID_SIZE = 24
 export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 4
-// Matches the layers panel's w-64.
-export const LAYERS_PANEL_WIDTH = 256
+// Desktop panel widths; keep in sync with --layers-w / --inspector-w in globals.css.
+export const PANEL_WIDTH = { layers: 256, inspector: 320 }
+// Below this the panels are temporary sheets over the canvas, not docked.
+export const DESKTOP_QUERY = "(min-width: 768px)"
 
 export type Diagram = {
   id: string
@@ -71,6 +73,17 @@ type Actions = {
 
 const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
 
+/**
+ * The part of the canvas not covered by docked panels, in canvas coordinates.
+ * The canvas always spans the full window and the panels float over it.
+ */
+export function visibleArea({ canvasSize, panels }: Pick<State, "canvasSize" | "panels">) {
+  const docked = window.matchMedia(DESKTOP_QUERY).matches
+  const left = docked && panels.layers ? PANEL_WIDTH.layers : 0
+  const right = docked && panels.inspector ? PANEL_WIDTH.inspector : 0
+  return { x: left, y: 0, width: canvasSize.width - left - right, height: canvasSize.height }
+}
+
 export const snap = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE
 
 function nextTitle(diagrams: Diagram[]) {
@@ -132,12 +145,13 @@ export const useCanvasStore = create<State & Actions>()(
       enteringId: null,
 
       addDiagram: (input = {}) => {
-        const { diagrams, viewport, canvasSize, topZ, settings } = get()
+        const { diagrams, viewport, topZ, settings } = get()
         const id = crypto.randomUUID()
-        // Default to the visible center of the canvas, in world coordinates.
+        // Default to the center of the uncovered canvas, in world coordinates.
+        const area = visibleArea(get())
         let at = input.at ?? {
-          x: (canvasSize.width / 2 - viewport.x) / viewport.zoom - 160,
-          y: (canvasSize.height / 2 - viewport.y) / viewport.zoom - 80,
+          x: (area.x + area.width / 2 - viewport.x) / viewport.zoom - 160,
+          y: (area.y + area.height / 2 - viewport.y) / viewport.zoom - 80,
         }
         if (settings.snapToGrid) at = { x: snap(at.x), y: snap(at.y) }
         const spot = freeSpot(diagrams, Math.round(at.x), Math.round(at.y))
@@ -226,16 +240,11 @@ export const useCanvasStore = create<State & Actions>()(
         set((state) => {
           if (state.panels[side] === open) return {}
           const panels = { ...state.panels, [side]: open }
-          // On phones the panels overlay the canvas, so only one fits at a time.
-          if (window.matchMedia("(max-width: 767px)").matches) {
-            if (open) panels[side === "layers" ? "inspector" : "layers"] = false
-            return { panels }
+          // On phones the panels cover most of the canvas, so only one fits at a time.
+          if (open && !window.matchMedia(DESKTOP_QUERY).matches) {
+            panels[side === "layers" ? "inspector" : "layers"] = false
           }
-          // On wider screens the layers panel pushes the canvas, so shift the
-          // viewport by its width to keep diagrams still on screen.
-          if (side === "inspector") return { panels }
-          const shift = open ? -LAYERS_PANEL_WIDTH : LAYERS_PANEL_WIDTH
-          return { panels, viewport: { ...state.viewport, x: state.viewport.x + shift } }
+          return { panels }
         }),
       setCanvasSize: (canvasSize) => set({ canvasSize }),
       setSize: (id, size) => set((state) => ({ sizes: { ...state.sizes, [id]: size } })),
@@ -243,13 +252,20 @@ export const useCanvasStore = create<State & Actions>()(
     }),
     {
       name: "mermaid-canvas",
-      version: 2,
+      version: 3,
       migrate: (persisted, version) => {
-        const state = persisted as Record<string, unknown>
+        let state = persisted as Record<string, unknown>
         if (version < 2) {
           // v1 had one control panel; it became the layers + inspector pair.
           const { panelOpen, ...rest } = state
-          return { ...rest, panels: { layers: panelOpen !== false, inspector: panelOpen !== false } }
+          state = { ...rest, panels: { layers: panelOpen !== false, inspector: panelOpen !== false } }
+        }
+        if (version < 3) {
+          // v2's canvas started right of the docked layers panel; now it spans
+          // the window under it. Shift the camera so nothing moves on screen.
+          const panels = state.panels as State["panels"]
+          const viewport = state.viewport as Viewport
+          if (panels.layers) state = { ...state, viewport: { ...viewport, x: viewport.x + PANEL_WIDTH.layers } }
         }
         return state
       },

@@ -1,4 +1,4 @@
-import { MAX_ZOOM, MIN_ZOOM, useCanvasStore, type Viewport } from "@/lib/store"
+import { MAX_ZOOM, MIN_ZOOM, useCanvasStore, visibleArea, type Viewport } from "@/lib/store"
 
 const FIT_MARGIN = 64
 // Cards report their size after the first render; until then, assume this.
@@ -70,18 +70,18 @@ function fitBounds(
   bounds: { x: number; y: number; width: number; height: number },
   maxZoom: number
 ): Viewport {
-  const { canvasSize } = useCanvasStore.getState()
+  const area = visibleArea(useCanvasStore.getState())
   const zoom = clampZoom(
     Math.min(
       maxZoom,
-      (canvasSize.width - FIT_MARGIN * 2) / bounds.width,
-      (canvasSize.height - FIT_MARGIN * 2) / bounds.height
+      (area.width - FIT_MARGIN * 2) / bounds.width,
+      (area.height - FIT_MARGIN * 2) / bounds.height
     )
   )
   return {
     zoom,
-    x: canvasSize.width / 2 - (bounds.x + bounds.width / 2) * zoom,
-    y: canvasSize.height / 2 - (bounds.y + bounds.height / 2) * zoom,
+    x: area.x + area.width / 2 - (bounds.x + bounds.width / 2) * zoom,
+    y: area.y + area.height / 2 - (bounds.y + bounds.height / 2) * zoom,
   }
 }
 
@@ -121,9 +121,10 @@ export function fitAll(options: CameraOptions = {}) {
 }
 
 function zoomTo(zoom: number, options: CameraOptions) {
-  const { viewport, canvasSize } = useCanvasStore.getState()
-  const base = pending ?? viewport
-  const center = { x: canvasSize.width / 2, y: canvasSize.height / 2 }
+  const state = useCanvasStore.getState()
+  const base = pending ?? state.viewport
+  const area = visibleArea(state)
+  const center = { x: area.x + area.width / 2, y: area.y + area.height / 2 }
   const next = clampZoom(zoom)
   const ratio = next / base.zoom
   const target = {

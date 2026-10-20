@@ -1,11 +1,11 @@
 "use client"
 
-import { Monitor, Moon, PanelLeftClose, Sun } from "lucide-react"
+import { Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
 import { DiagramList } from "@/components/panel/diagram-list"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
-import { Panel, PanelIconButton } from "@/components/panel/panel-chrome"
+import { Panel, PanelToggleSlot } from "@/components/panel/panel-chrome"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -65,17 +65,15 @@ function Logo() {
 
 export function LayersPanel() {
   const count = useCanvasStore((s) => s.diagrams.length)
-  const setPanel = useCanvasStore((s) => s.setPanel)
+  const open = useCanvasStore((s) => s.panels.layers)
 
   return (
-    <Panel side="left" label="图层" className="w-64">
+    <Panel side="left" label="图层" open={open}>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b pr-2 pl-4">
         <Logo />
         <h1 className="flex-1 truncate text-sm font-semibold">Mermaid 画布</h1>
         <ThemeMenu />
-        <PanelIconButton label="收起图层面板" onClick={() => setPanel("layers", false)}>
-          <PanelLeftClose />
-        </PanelIconButton>
+        <PanelToggleSlot />
       </header>
 
       <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-4 pb-2">

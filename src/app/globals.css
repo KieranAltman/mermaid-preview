@@ -9,6 +9,8 @@
   --ease-out-quint: cubic-bezier(0.23, 1, 0.32, 1);
   /* Panels sliding in from an edge. */
   --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
+  /* Icons cross-fading between two states; stands in for a bounce-free spring. */
+  --ease-swap: cubic-bezier(0.25, 0.1, 0, 1);
 
   /* A diagram the user just created settles into place where it landed. */
   --animate-diagram-enter: diagram-enter 200ms var(--ease-out-quint);
@@ -40,6 +42,8 @@
   --color-chart-3: var(--chart-3);
   --color-chart-2: var(--chart-2);
   --color-canvas: var(--canvas);
+  --color-field: var(--field);
+  --color-raised: var(--raised);
   --color-canvas-dot: var(--canvas-dot);
   --color-selection: var(--selection);
   --color-chart-1: var(--chart-1);
@@ -98,7 +102,7 @@
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
   --radius: 0.625rem;
-  --sidebar: oklch(0.985 0.002 260);
+  --sidebar: oklch(0.993 0.002 260);
   --sidebar-foreground: oklch(0.19 0.008 260);
   --sidebar-primary: oklch(0.24 0.01 260);
   --sidebar-primary-foreground: oklch(0.985 0.002 260);
@@ -107,7 +111,12 @@
   --sidebar-border: oklch(0.2 0.02 260 / 0.1);
   --sidebar-ring: oklch(0.62 0.17 259);
 
-  --canvas: oklch(0.968 0.003 260);
+  /* Surface layers, back to front: canvas < field (recessed wells) < sidebar
+     (panels) < raised (buttons). Each step is an L gap; hue stays at 260. */
+  --canvas: oklch(0.955 0.004 260);
+  --field: oklch(0.962 0.004 260);
+  --raised: oklch(1 0 0);
+  --raised-shadow: 0 0 0 1px oklch(0.2 0.02 260 / 0.11), 0 1px 2px oklch(0.2 0.02 260 / 0.07);
   --canvas-dot: oklch(0.2 0.02 260 / 0.16);
   --selection: oklch(0.6 0.19 259);
   --frame-shadow:
@@ -120,7 +129,7 @@
   --foreground: oklch(0.95 0.004 260);
   --card: oklch(0.2 0.006 260);
   --card-foreground: oklch(0.95 0.004 260);
-  --popover: oklch(0.21 0.006 260);
+  --popover: oklch(0.27 0.007 260);
   --popover-foreground: oklch(0.95 0.004 260);
   --primary: oklch(0.93 0.004 260);
   --primary-foreground: oklch(0.2 0.006 260);
@@ -141,7 +150,7 @@
   --chart-3: oklch(0.439 0 0);
   --chart-4: oklch(0.371 0 0);
   --chart-5: oklch(0.269 0 0);
-  --sidebar: oklch(0.19 0.006 260);
+  --sidebar: oklch(0.195 0.006 260);
   --sidebar-foreground: oklch(0.95 0.004 260);
   --sidebar-primary: oklch(0.93 0.004 260);
   --sidebar-primary-foreground: oklch(0.2 0.006 260);
@@ -150,7 +159,11 @@
   --sidebar-border: oklch(0.27 0.007 260);
   --sidebar-ring: oklch(0.66 0.14 259);
 
+  /* Same order as light; the top layer stays the brightest. */
   --canvas: oklch(0.145 0.004 260);
+  --field: oklch(0.165 0.005 260);
+  --raised: oklch(0.255 0.007 260);
+  --raised-shadow: 0 0 0 1px oklch(0.33 0.008 260), 0 1px 2px oklch(0 0 0 / 0.3);
   --canvas-dot: oklch(0.36 0.008 260);
   --selection: oklch(0.68 0.15 259);
   --frame-shadow:
@@ -167,6 +180,32 @@
   }
   html {
     @apply font-sans;
+  }
+}
+
+/* Panels float over a canvas that always spans the window. Docked panels
+   (desktop) inset the canvas overlays; on phones the panels are temporary
+   sheets, so nothing moves out of their way. */
+.studio {
+  --layers-w: 16rem;
+  --inspector-w: 20rem;
+  --inset-left: 0px;
+  --inset-right: 0px;
+}
+
+@media (width < 48rem) {
+  .studio {
+    --layers-w: min(20rem, calc(100vw - 3rem));
+    --inspector-w: min(20rem, calc(100vw - 3rem));
+  }
+}
+
+@media (width >= 48rem) {
+  .studio[data-layers="open"] {
+    --inset-left: var(--layers-w);
+  }
+  .studio[data-inspector="open"] {
+    --inset-right: var(--inspector-w);
   }
 }
 
