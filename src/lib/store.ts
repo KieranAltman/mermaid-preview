@@ -41,10 +41,12 @@ type State = {
   viewport: Viewport
   settings: Settings
   panels: Record<PanelSide, boolean>
+  editorHeight: number
   // Runtime only, not persisted.
   canvasSize: Size
   sizes: Record<string, Size>
   fonts: { sans: string; mono: string } | null
+  editorOpen: boolean
   // The diagram that should play its enter animation; null on page load.
   enteringId: string | null
 }
@@ -66,6 +68,8 @@ type Actions = {
   zoomAt: (zoom: number, point: { x: number; y: number }) => void
   updateSettings: (patch: Partial<Settings>) => void
   setPanel: (side: PanelSide, open: boolean) => void
+  setEditorOpen: (open: boolean) => void
+  setEditorHeight: (height: number) => void
   setCanvasSize: (size: Size) => void
   setSize: (id: string, size: Size) => void
   setFonts: (fonts: { sans: string; mono: string }) => void
@@ -77,11 +81,17 @@ const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
  * The part of the canvas not covered by docked panels, in canvas coordinates.
  * The canvas always spans the full window and the panels float over it.
  */
-export function visibleArea({ canvasSize, panels }: Pick<State, "canvasSize" | "panels">) {
+export function visibleArea({
+  canvasSize,
+  panels,
+  editorOpen,
+  editorHeight,
+}: Pick<State, "canvasSize" | "panels" | "editorOpen" | "editorHeight">) {
   const docked = window.matchMedia(DESKTOP_QUERY).matches
   const left = docked && panels.layers ? PANEL_WIDTH.layers : 0
   const right = docked && panels.inspector ? PANEL_WIDTH.inspector : 0
-  return { x: left, y: 0, width: canvasSize.width - left - right, height: canvasSize.height }
+  const bottom = editorOpen ? editorHeight : 0
+  return { x: left, y: 0, width: canvasSize.width - left - right, height: canvasSize.height - bottom }
 }
 
 export const snap = (value: number) => Math.round(value / GRID_SIZE) * GRID_SIZE
@@ -108,7 +118,7 @@ const seed: Diagram[] = [
     title: "欢迎",
     code: `flowchart LR
   A[双击空白处] --> B[新建图表]
-  B --> C[在左侧编辑代码]
+  B --> C[在底部编辑代码]
   C --> D[拖拽整理画布]`,
     x: 96,
     y: 96,
@@ -139,9 +149,11 @@ export const useCanvasStore = create<State & Actions>()(
         snapToGrid: false,
       },
       panels: { layers: true, inspector: true },
+      editorHeight: 300,
       canvasSize: { width: 0, height: 0 },
       sizes: {},
       fonts: null,
+      editorOpen: false,
       enteringId: null,
 
       addDiagram: (input = {}) => {
@@ -249,6 +261,8 @@ export const useCanvasStore = create<State & Actions>()(
       setCanvasSize: (canvasSize) => set({ canvasSize }),
       setSize: (id, size) => set((state) => ({ sizes: { ...state.sizes, [id]: size } })),
       setFonts: (fonts) => set({ fonts }),
+      setEditorOpen: (editorOpen) => set({ editorOpen }),
+      setEditorHeight: (editorHeight) => set({ editorHeight }),
     }),
     {
       name: "mermaid-canvas",
@@ -269,13 +283,14 @@ export const useCanvasStore = create<State & Actions>()(
         }
         return state
       },
-      partialize: ({ diagrams, selectedId, topZ, viewport, settings, panels }) => ({
+      partialize: ({ diagrams, selectedId, topZ, viewport, settings, panels, editorHeight }) => ({
         diagrams,
         selectedId,
         topZ,
         viewport,
         settings,
         panels,
+        editorHeight,
       }),
     }
   )

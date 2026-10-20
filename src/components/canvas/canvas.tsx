@@ -8,6 +8,7 @@ import { ZoomControls } from "@/components/canvas/zoom-controls"
 import { CanvasEmptyState, CanvasHints } from "@/components/canvas/canvas-overlays"
 import { useDiagramVars } from "@/hooks/use-diagram"
 import { deleteDiagram } from "@/lib/actions"
+import { openEditor } from "@/lib/editor"
 import { GRID_SIZE, MAX_ZOOM, MIN_ZOOM, snap, useCanvasStore } from "@/lib/store"
 import { fitAll, focusDiagram, resetZoom, stopViewportAnimation, zoomBy } from "@/lib/viewport"
 import { cn } from "@/lib/utils"
@@ -21,6 +22,11 @@ type Gesture =
 
 // Pixels a pointer has to travel before a press counts as a drag, not a click.
 const DRAG_THRESHOLD = 3
+
+// Enter on a focused button or menu item belongs to that control.
+function isControl(target: EventTarget | null) {
+  return target instanceof Element && !!target.closest("button, a, [role=menuitem], [role=option], [role=separator]")
+}
 
 function isEditable(target: EventTarget | null) {
   return (
@@ -135,6 +141,9 @@ export function Canvas() {
         store.select(null)
       } else if (!selected) {
         return
+      } else if (event.key === "Enter" && !isControl(event.target)) {
+        event.preventDefault()
+        openEditor()
       } else if (event.key === "Delete" || event.key === "Backspace") {
         event.preventDefault()
         deleteDiagram(selected.id)
@@ -279,10 +288,7 @@ export function Canvas() {
     if (!target || target.closest("[data-canvas-ui]")) return
     const card = target.closest<HTMLElement>("[data-diagram-id]")
     if (card) {
-      const { panels, setPanel } = useCanvasStore.getState()
-      if (!panels.inspector) setPanel("inspector", true)
-      // The editor mounts on the next frame when the panel was just opened.
-      requestAnimationFrame(() => document.getElementById("diagram-code")?.focus())
+      openEditor()
       return
     }
     const point = toLocal(event)

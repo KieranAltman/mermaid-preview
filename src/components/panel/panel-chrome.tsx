@@ -32,7 +32,7 @@ export function PanelToggleSlot() {
 // Drawer recipe: slower in than out, sharing timing with everything that
 // moves alongside the panel. Off until the first paint so nothing slides on load.
 export const followPanelMotion =
-  "transition-[translate] duration-200 ease-drawer data-open:duration-300 group-data-[ready=false]/studio:transition-none"
+  "transition-[translate] duration-200 ease-drawer data-open:duration-300 group-data-[ready=false]/studio:transition-none group-data-resizing/studio:transition-none"
 
 export function Panel({
   side,

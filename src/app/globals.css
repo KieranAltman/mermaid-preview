@@ -191,6 +191,7 @@
   --inspector-w: 20rem;
   --inset-left: 0px;
   --inset-right: 0px;
+  --inset-bottom: 0px;
 }
 
 @media (width < 48rem) {

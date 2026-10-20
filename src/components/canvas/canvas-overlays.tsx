@@ -31,7 +31,7 @@ export function CanvasHints() {
     <p
       data-state={layersOpen ? "open" : "closed"}
       className={cn(
-        "pointer-events-none absolute bottom-5 left-4 hidden translate-x-(--inset-left) items-center gap-3 text-xs text-muted-foreground lg:flex",
+        "pointer-events-none absolute bottom-5 left-4 hidden translate-x-(--inset-left) -translate-y-(--inset-bottom) items-center gap-3 text-xs text-muted-foreground lg:flex",
         followPanelMotion
       )}
     >

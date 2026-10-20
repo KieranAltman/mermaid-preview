@@ -5,6 +5,7 @@ import { CircleAlert } from "lucide-react"
 import type { RenderResult } from "pele"
 
 import { useDiagramRender } from "@/hooks/use-diagram"
+import { errorReason } from "@/lib/pele"
 import { useCanvasStore } from "@/lib/store"
 import { typeLabel } from "@/lib/templates"
 import { cn } from "@/lib/utils"
@@ -76,7 +77,7 @@ export const DiagramCard = memo(function DiagramCard({ id }: { id: string }) {
             {error ? (
               <p className="flex items-start gap-2 text-sm text-destructive">
                 <CircleAlert className="mt-0.5 size-4 shrink-0" aria-hidden />
-                <span className="line-clamp-3">无法渲染：{error.message.split("\n")[0]}</span>
+                <span className="line-clamp-3">无法渲染：{errorReason(error)}</span>
               </p>
             ) : (
               <div className="h-full w-full animate-pulse rounded-md bg-muted" />

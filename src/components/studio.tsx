@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useLayoutEffect, useState } from "react"
+import { useEffect, useLayoutEffect, useState, type CSSProperties } from "react"
 
 import { Canvas } from "@/components/canvas/canvas"
+import { CodeDock } from "@/components/editor/code-dock"
 import { InspectorPanel } from "@/components/panel/inspector-panel"
 import { LayersPanel } from "@/components/panel/layers-panel"
 import { PanelToggle } from "@/components/panel/panel-toggle"
@@ -18,6 +19,8 @@ function isFirstVisit() {
 
 export default function Studio() {
   const panels = useCanvasStore((s) => s.panels)
+  const editorOpen = useCanvasStore((s) => s.editorOpen)
+  const editorHeight = useCanvasStore((s) => s.editorHeight)
   // Panel motion stays off until after the first paint, so nothing slides in on load.
   const [ready, setReady] = useState(false)
 
@@ -55,10 +58,13 @@ export default function Studio() {
       data-ready={ready}
       data-layers={panels.layers ? "open" : "closed"}
       data-inspector={panels.inspector ? "open" : "closed"}
+      // Canvas overlays rise above the open editor.
+      style={{ "--inset-bottom": editorOpen ? `${editorHeight}px` : "0px" } as CSSProperties}
     >
       <PanelToggle side="layers" />
       <LayersPanel />
       <Canvas />
+      <CodeDock />
       <PanelToggle side="inspector" />
       <InspectorPanel />
     </div>

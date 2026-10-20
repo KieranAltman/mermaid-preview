@@ -16,6 +16,19 @@ export type DiagramError = {
   snippet: string
 }
 
+/**
+ * The human part of a Pele error. Parse errors end with the reason; lexical
+ * errors lead with it and end with the source line and a caret.
+ */
+export function errorReason({ message, snippet }: DiagramError) {
+  const lines = (snippet ? message.replace(snippet, "") : message)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+  const details = lines.filter((line) => !/^(Parse|Lexical) error on line \d+[:.]?$/.test(line))
+  return (details.at(-1) ?? lines[0] ?? message).replace(/^(Parse|Lexical) error on line \d+[:.]\s*/, "")
+}
+
 export type DiagramRender =
   | { ok: true; result: RenderResult }
   | { ok: false; error: DiagramError }

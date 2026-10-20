@@ -37,7 +37,7 @@ export function ZoomControls() {
       data-canvas-ui
       data-state={inspectorOpen ? "open" : "closed"}
       className={cn(
-        "absolute right-4 bottom-4 flex -translate-x-(--inset-right) items-center gap-0.5 rounded-lg bg-background p-0.5 shadow-(--frame-shadow)",
+        "absolute right-4 bottom-4 flex -translate-x-(--inset-right) -translate-y-(--inset-bottom) items-center gap-0.5 rounded-lg bg-background p-0.5 shadow-(--frame-shadow)",
         followPanelMotion
       )}
     >
