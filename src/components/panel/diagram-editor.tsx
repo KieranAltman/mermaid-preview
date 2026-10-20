@@ -33,10 +33,10 @@ function IconAction({
 }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>
-        <Button variant="ghost" size="icon" aria-label={label} onClick={onClick} className={className}>
-          {children}
-        </Button>
+      <TooltipTrigger
+        render={<Button variant="ghost" size="icon" aria-label={label} onClick={onClick} className={className} />}
+      >
+        {children}
       </TooltipTrigger>
       <TooltipContent>{label}</TooltipContent>
     </Tooltip>
@@ -136,20 +136,18 @@ export function DiagramEditor({ diagram }: { diagram: Diagram }) {
 
       <div className="flex items-center gap-1">
         <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="outline" disabled={!exportInput || hasError}>
-              <Download data-icon="inline-start" />
-              导出
-            </Button>
+          <DropdownMenuTrigger render={<Button variant="outline" />} disabled={!exportInput || hasError}>
+            <Download data-icon="inline-start" />
+            导出
           </DropdownMenuTrigger>
           <DropdownMenuContent align="start" className="w-44">
-            <DropdownMenuItem onSelect={() => exportInput && downloadSvg(exportInput)}>下载 SVG</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => exportInput && downloadPng(exportInput)}>
+            <DropdownMenuItem onClick={() => exportInput && downloadSvg(exportInput)}>下载 SVG</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportInput && downloadPng(exportInput)}>
               下载 PNG（2×）
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem onSelect={() => exportInput && copySvg(exportInput)}>复制 SVG 代码</DropdownMenuItem>
-            <DropdownMenuItem onSelect={() => copyCode(diagram.code)}>复制 Mermaid 代码</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => exportInput && copySvg(exportInput)}>复制 SVG 代码</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => copyCode(diagram.code)}>复制 Mermaid 代码</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
         <IconAction label="在画布中定位" onClick={() => focusDiagram(diagram.id)}>

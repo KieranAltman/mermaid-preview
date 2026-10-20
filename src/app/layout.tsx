@@ -30,7 +30,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="h-full overflow-hidden">
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <TooltipProvider delayDuration={400}>{children}</TooltipProvider>
+          <TooltipProvider delay={400}>{children}</TooltipProvider>
           <Toaster position="bottom-center" />
         </ThemeProvider>
       </body>

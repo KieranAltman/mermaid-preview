@@ -7,7 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { useCanvasStore } from "@/lib/store"
-import { diagramThemes, type DiagramTheme } from "@/lib/themes"
+import { diagramThemes, getDiagramTheme, type DiagramTheme } from "@/lib/themes"
 
 function Swatch({ theme }: { theme: DiagramTheme }) {
   const { resolvedTheme } = useTheme()
@@ -53,7 +53,7 @@ function SliderField({
         min={min}
         max={max}
         step={step}
-        onValueChange={([next]) => onChange(next)}
+        onValueChange={(next) => onChange(Array.isArray(next) ? next[0] : next)}
       />
     </div>
   )
@@ -91,9 +91,20 @@ export function AppearanceSettings() {
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="diagram-theme">配色</Label>
-        <Select value={settings.themeId} onValueChange={(themeId) => updateSettings({ themeId })}>
+        <Select value={settings.themeId} onValueChange={(themeId) => themeId && updateSettings({ themeId })}>
           <SelectTrigger id="diagram-theme" className="w-full">
-            <SelectValue />
+            {/* Base UI shows the raw value by default; map it back to swatch + label. */}
+            <SelectValue>
+              {(themeId: string) => {
+                const theme = getDiagramTheme(themeId)
+                return (
+                  <>
+                    <Swatch theme={theme} />
+                    {theme.label}
+                  </>
+                )
+              }}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             {diagramThemes.map((theme) => (

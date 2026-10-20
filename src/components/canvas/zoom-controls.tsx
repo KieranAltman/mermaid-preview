@@ -1,6 +1,6 @@
 "use client"
 
-import type { ReactNode } from "react"
+import type { ReactElement } from "react"
 import { Minus, Plus, Scan } from "lucide-react"
 
 import { Button } from "@/components/ui/button"
@@ -10,10 +10,10 @@ import { modKey } from "@/lib/platform"
 import { useCanvasStore } from "@/lib/store"
 import { fitAll, resetZoom, zoomBy } from "@/lib/viewport"
 
-function Hint({ label, keys, children }: { label: string; keys: string[]; children: ReactNode }) {
+function Hint({ label, keys, children }: { label: string; keys: string[]; children: ReactElement }) {
   return (
     <Tooltip>
-      <TooltipTrigger asChild>{children}</TooltipTrigger>
+      <TooltipTrigger render={children} />
       <TooltipContent side="top" className="flex items-center gap-2">
         {label}
         <KbdGroup>

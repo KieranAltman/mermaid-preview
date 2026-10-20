@@ -23,12 +23,13 @@ function ThemeMenu() {
   return (
     <DropdownMenu>
       <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" aria-label="切换界面主题">
-              {resolvedTheme === "dark" ? <Moon /> : <Sun />}
-            </Button>
-          </DropdownMenuTrigger>
+        {/* One button is both the tooltip trigger and the menu trigger. */}
+        <TooltipTrigger
+          render={
+            <DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="切换界面主题" />} />
+          }
+        >
+          {resolvedTheme === "dark" ? <Moon /> : <Sun />}
         </TooltipTrigger>
         <TooltipContent>界面主题</TooltipContent>
       </Tooltip>
