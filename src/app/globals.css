@@ -52,6 +52,8 @@
   --color-border: var(--border);
   --color-destructive: var(--destructive);
   --color-destructive-foreground: var(--destructive-foreground);
+  --color-warning: var(--warning);
+  --color-danger: var(--danger);
   --color-accent-foreground: var(--accent-foreground);
   --color-accent: var(--accent);
   --color-muted-foreground: var(--muted-foreground);
@@ -93,6 +95,10 @@
   --accent-foreground: oklch(0.24 0.01 260);
   --destructive: oklch(0.577 0.215 27.325);
   --destructive-foreground: oklch(0.99 0.004 27);
+  /* Status text. --destructive is tuned as a fill; as text on --field it lands
+     at 4.3:1, so danger words take a darker step of the same hue. */
+  --warning: oklch(0.53 0.13 60);
+  --danger: oklch(0.52 0.2 27);
   --border: oklch(0.2 0.02 260 / 0.1);
   --input: oklch(0.2 0.02 260 / 0.14);
   --ring: oklch(0.62 0.17 259);
@@ -151,6 +157,8 @@
   --destructive: oklch(0.68 0.17 22.216);
   /* The dark-mode red is light, so text on it has to be dark to stay legible. */
   --destructive-foreground: oklch(0.2 0.03 22);
+  --warning: oklch(0.8 0.12 75);
+  --danger: var(--destructive);
   --border: oklch(0.28 0.007 260);
   --input: oklch(0.32 0.008 260);
   --ring: oklch(0.66 0.14 259);
@@ -204,8 +212,9 @@
    (desktop) inset the canvas overlays; on phones the panels are temporary
    sheets, so nothing moves out of their way. */
 .studio {
-  --layers-w: 16rem;
-  --inspector-w: 20rem;
+  /* Docked widths come from the store, which the user resizes. */
+  --layers-w: var(--layers-docked-w, 16rem);
+  --inspector-w: var(--inspector-docked-w, 20rem);
   --inset-left: 0px;
   --inset-right: 0px;
   --inset-bottom: 0px;

@@ -8,7 +8,7 @@ import { InspectorPanel } from "@/components/panel/inspector-panel"
 import { LayersPanel } from "@/components/panel/layers-panel"
 import { PanelToggle } from "@/components/panel/panel-toggle"
 import { loadHandFont } from "@/lib/look"
-import { DESKTOP_QUERY, PANEL_WIDTH, useCanvasStore } from "@/lib/store"
+import { DESKTOP_QUERY, dockedWidths, useCanvasStore } from "@/lib/store"
 
 function isFirstVisit() {
   try {
@@ -22,6 +22,8 @@ export default function Studio() {
   const panels = useCanvasStore((s) => s.panels)
   const editorOpen = useCanvasStore((s) => s.editorOpen)
   const editorHeight = useCanvasStore((s) => s.editorHeight)
+  const layersWidth = useCanvasStore((s) => dockedWidths(s).layers)
+  const inspectorWidth = useCanvasStore((s) => dockedWidths(s).inspector)
   // Panel motion stays off until after the first paint, so nothing slides in on load.
   const [ready, setReady] = useState(false)
 
@@ -33,7 +35,7 @@ export default function Studio() {
       store.setPanel("inspector", false)
     } else if (isFirstVisit() && store.panels.layers) {
       // The canvas runs under the docked layers panel; start the camera beside it.
-      store.setViewport({ ...store.viewport, x: PANEL_WIDTH.layers })
+      store.setViewport({ ...store.viewport, x: dockedWidths(store).layers })
     }
     const frame = requestAnimationFrame(() => setReady(true))
     return () => cancelAnimationFrame(frame)
@@ -60,8 +62,14 @@ export default function Studio() {
       data-ready={ready}
       data-layers={panels.layers ? "open" : "closed"}
       data-inspector={panels.inspector ? "open" : "closed"}
-      // Canvas overlays rise above the open editor.
-      style={{ "--inset-bottom": editorOpen ? `${editorHeight}px` : "0px" } as CSSProperties}
+      style={
+        {
+          // Canvas overlays rise above the open editor.
+          "--inset-bottom": editorOpen ? `${editorHeight}px` : "0px",
+          "--layers-docked-w": `${layersWidth}px`,
+          "--inspector-docked-w": `${inspectorWidth}px`,
+        } as CSSProperties
+      }
     >
       <PanelToggle side="layers" />
       <LayersPanel />

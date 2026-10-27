@@ -6,6 +6,7 @@ import { useTheme } from "next-themes"
 import { DiagramList } from "@/components/panel/diagram-list"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
 import { Panel, PanelToggleSlot } from "@/components/panel/panel-chrome"
+import { StorageUsage } from "@/components/panel/storage-usage"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -88,6 +89,8 @@ export function LayersPanel() {
           <DiagramList />
         </div>
       </ScrollArea>
+
+      <StorageUsage />
 
       <footer className="shrink-0 border-t px-4 py-2.5 text-xs text-muted-foreground">
         由{" "}

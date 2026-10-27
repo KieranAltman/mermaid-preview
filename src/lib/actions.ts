@@ -60,3 +60,10 @@ export async function copyCode(code: string) {
   await navigator.clipboard.writeText(code)
   toast.success("Mermaid 代码已复制")
 }
+
+/** Downloads the saved canvas as JSON: otherwise its only copy lives in this browser. */
+export function downloadBackup() {
+  const data = localStorage.getItem(useCanvasStore.persist.getOptions().name!) ?? "{}"
+  const date = new Date().toISOString().slice(0, 10)
+  downloadBlob(new Blob([data], { type: "application/json" }), `mermaid-画布备份-${date}.json`)
+}

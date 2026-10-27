@@ -55,7 +55,7 @@ export function CodeDock() {
       style={{ height, left: "var(--inset-left)", right: "var(--inset-right)" }}
       // Same surface as the side panels: square corners, sidebar fill, one
       // hairline against the canvas and no lift; the three read as one frame.
-      className="absolute bottom-0 z-10 flex flex-col border-t bg-sidebar text-sidebar-foreground transition-[translate,left,right] duration-200 ease-drawer data-closed:translate-y-full data-open:duration-300 group-data-[ready=false]/studio:transition-none"
+      className="absolute bottom-0 z-10 flex flex-col border-t bg-sidebar text-sidebar-foreground transition-[translate,left,right] duration-200 ease-drawer data-closed:translate-y-full data-open:duration-300 group-data-[ready=false]/studio:transition-none group-data-resizing/studio:transition-none"
     >
       <div
         role="separator"
