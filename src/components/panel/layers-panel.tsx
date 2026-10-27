@@ -3,6 +3,7 @@
 import { Monitor, Moon, Sun } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import { CanvasList } from "@/components/panel/canvas-list"
 import { DiagramList } from "@/components/panel/diagram-list"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
 import { Panel, PanelToggleSlot } from "@/components/panel/panel-chrome"
@@ -17,7 +18,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
-import { useCanvasStore } from "@/lib/store"
+import { currentDiagrams, useCanvasStore } from "@/lib/store"
 
 function ThemeMenu() {
   const { theme, setTheme, resolvedTheme } = useTheme()
@@ -65,23 +66,26 @@ function Logo() {
 }
 
 export function LayersPanel() {
-  const count = useCanvasStore((s) => s.diagrams.length)
+  const count = useCanvasStore((s) => currentDiagrams(s).length)
   const open = useCanvasStore((s) => s.panels.layers)
 
   return (
     <Panel side="left" label="图层" open={open}>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b pr-2 pl-4">
         <Logo />
-        <h1 className="flex-1 truncate text-sm font-semibold">Mermaid 画布</h1>
+        <h1 className="flex-1 truncate text-sm font-semibold">Mermaid Preview</h1>
         <ThemeMenu />
         <PanelToggleSlot />
       </header>
 
-      <div className="flex shrink-0 items-center justify-between gap-2 px-4 pt-4 pb-2">
-        <h2 className="text-xs font-medium text-muted-foreground">
+      <CanvasList />
+
+      {/* Laid out like the canvas heading, so the two plus buttons line up. */}
+      <div className="flex shrink-0 items-center gap-1 pt-3 pr-3 pb-1 pl-4">
+        <h2 className="flex-1 text-xs font-medium text-muted-foreground">
           图层 <span className="tabular-nums">· {count}</span>
         </h2>
-        <NewDiagramMenu size="sm" variant="outline" />
+        <NewDiagramMenu compact />
       </div>
 
       <ScrollArea className="min-h-0 flex-1">

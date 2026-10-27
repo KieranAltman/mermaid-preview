@@ -1,8 +1,9 @@
 "use client"
 
-import { Copy, Download, LocateFixed, Trash2 } from "lucide-react"
+import { Copy, Download, LocateFixed, SquareArrowRight, Trash2 } from "lucide-react"
 
 import { CodePreview } from "@/components/editor/code-preview"
+import { MoveToCanvasMenu } from "@/components/panel/move-to-canvas"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -89,6 +90,20 @@ export function DiagramEditor({ diagram }: { diagram: Diagram }) {
         <IconAction label="创建副本" onClick={() => duplicateDiagram(diagram.id)}>
           <Copy />
         </IconAction>
+        <MoveToCanvasMenu
+          ids={[diagram.id]}
+          trigger={
+            <Tooltip>
+              {/* One button is both the tooltip trigger and the menu trigger. */}
+              <TooltipTrigger
+                render={<DropdownMenuTrigger render={<Button variant="ghost" size="icon" aria-label="移到画布" />} />}
+              >
+                <SquareArrowRight />
+              </TooltipTrigger>
+              <TooltipContent>移到画布</TooltipContent>
+            </Tooltip>
+          }
+        />
         <div className="flex-1" />
         <IconAction
           label="删除图表"

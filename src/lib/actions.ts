@@ -65,5 +65,5 @@ export async function copyCode(code: string) {
 export function downloadBackup() {
   const data = localStorage.getItem(useCanvasStore.persist.getOptions().name!) ?? "{}"
   const date = new Date().toISOString().slice(0, 10)
-  downloadBlob(new Blob([data], { type: "application/json" }), `mermaid-画布备份-${date}.json`)
+  downloadBlob(new Blob([data], { type: "application/json" }), `mermaid-preview-备份-${date}.json`)
 }
