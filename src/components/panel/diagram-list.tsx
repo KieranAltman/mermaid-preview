@@ -3,17 +3,10 @@
 import { Workflow } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
-import { MoveToCanvasSubmenu } from "@/components/panel/move-to-canvas"
+import { DiagramMenu } from "@/components/panel/diagram-menu"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
-import {
-  ContextMenu,
-  ContextMenuContent,
-  ContextMenuItem,
-  ContextMenuSeparator,
-  ContextMenuTrigger,
-} from "@/components/ui/context-menu"
+import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useDiagramRender } from "@/hooks/use-diagram"
-import { deleteDiagrams } from "@/lib/actions"
 import { currentDiagrams, useCanvasStore } from "@/lib/store"
 import { typeLabel } from "@/lib/templates"
 import { focusDiagram } from "@/lib/viewport"
@@ -62,25 +55,8 @@ function DiagramRow({ id }: { id: string }) {
           )}
         </button>
       </ContextMenuTrigger>
-      <RowMenu id={id} />
+      <DiagramMenu id={id} />
     </ContextMenu>
-  )
-}
-
-function RowMenu({ id }: { id: string }) {
-  const selectedIds = useCanvasStore((s) => s.selectedIds)
-  const duplicateDiagram = useCanvasStore((s) => s.duplicateDiagram)
-  // Right-clicking a row inside the selection acts on the whole selection.
-  const ids = selectedIds.includes(id) ? selectedIds : [id]
-  return (
-    <ContextMenuContent className="w-40">
-      <MoveToCanvasSubmenu ids={ids} />
-      {ids.length === 1 && <ContextMenuItem onClick={() => duplicateDiagram(id)}>创建副本</ContextMenuItem>}
-      <ContextMenuSeparator />
-      <ContextMenuItem variant="destructive" onClick={() => deleteDiagrams(ids)}>
-        {ids.length === 1 ? "删除" : `删除 ${ids.length} 张图表`}
-      </ContextMenuItem>
-    </ContextMenuContent>
   )
 }
 
