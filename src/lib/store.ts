@@ -7,8 +7,11 @@ import { defaultTemplate, templates } from "@/lib/templates"
 export const GRID_SIZE = 24
 export const MIN_ZOOM = 0.1
 export const MAX_ZOOM = 4
-// Desktop panel widths; keep in sync with --layers-w / --inspector-w in globals.css.
+// Default desktop panel widths; keep in sync with the fallbacks in globals.css.
 export const PANEL_WIDTH = { layers: 256, inspector: 320 }
+// How far each panel can be resized, and the canvas width docked panels must leave free.
+export const PANEL_WIDTH_RANGE = { layers: { min: 224, max: 400 }, inspector: { min: 280, max: 480 } }
+export const MIN_CANVAS_WIDTH = 480
 // Below this the panels are temporary sheets over the canvas, not docked.
 export const DESKTOP_QUERY = "(min-width: 768px)"
 
@@ -47,6 +50,8 @@ type State = {
   viewport: Viewport
   settings: Settings
   panels: Record<PanelSide, boolean>
+  // The widths the user dragged the panels to; see dockedWidths for what is drawn.
+  panelWidths: Record<PanelSide, number>
   editorHeight: number
   // Runtime only, not persisted.
   canvasSize: Size
@@ -79,6 +84,7 @@ type Actions = {
   zoomAt: (zoom: number, point: { x: number; y: number }) => void
   updateSettings: (patch: Partial<Settings>) => void
   setPanel: (side: PanelSide, open: boolean) => void
+  setPanelWidth: (side: PanelSide, width: number) => void
   setEditorOpen: (open: boolean) => void
   setEditorHeight: (height: number) => void
   setCanvasSize: (size: Size) => void
@@ -89,19 +95,60 @@ type Actions = {
 
 const clampZoom = (zoom: number) => Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, zoom))
 
+const sides: PanelSide[] = ["layers", "inspector"]
+const otherSide = (side: PanelSide): PanelSide => (side === "layers" ? "inspector" : "layers")
+const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value))
+
+type PanelLayout = Pick<State, "panelWidths" | "panels" | "canvasSize">
+
+// The canvas spans the window; before it is measured, the window stands in.
+const roomForPanels = ({ canvasSize }: PanelLayout) =>
+  (canvasSize.width || window.innerWidth) - MIN_CANVAS_WIDTH
+
+/**
+ * The widths the docked panels are drawn at. Each keeps the width it was given
+ * while the window has room; in a narrow window the open ones give way
+ * together, in proportion to how far each can still shrink, so the canvas
+ * keeps MIN_CANVAS_WIDTH. No panel goes below its minimum.
+ */
+export function dockedWidths(state: PanelLayout): Record<PanelSide, number> {
+  const { panelWidths, panels } = state
+  const room = roomForPanels(state)
+  const widths = { ...panelWidths }
+  const open = sides.filter((side) => panels[side])
+  const excess = open.reduce((sum, side) => sum + widths[side], 0) - room
+  const slack = open.reduce((sum, side) => sum + widths[side] - PANEL_WIDTH_RANGE[side].min, 0)
+  if (excess > 0 && slack > 0) {
+    const share = Math.min(1, excess / slack)
+    for (const side of open) widths[side] -= (widths[side] - PANEL_WIDTH_RANGE[side].min) * share
+  }
+  // A closed panel opens into whatever the open one leaves.
+  for (const side of sides.filter((s) => !panels[s])) {
+    const { min } = PANEL_WIDTH_RANGE[side]
+    const other = otherSide(side)
+    widths[side] = clamp(widths[side], min, Math.max(min, room - (panels[other] ? widths[other] : 0)))
+  }
+  return { layers: Math.round(widths.layers), inspector: Math.round(widths.inspector) }
+}
+
+/** The range a panel can be dragged across right now, given the window and the other panel. */
+export function panelWidthRange(side: PanelSide, state: PanelLayout) {
+  const { min, max } = PANEL_WIDTH_RANGE[side]
+  const other = otherSide(side)
+  const taken = state.panels[other] ? dockedWidths(state)[other] : 0
+  return { min, max: clamp(roomForPanels(state) - taken, min, max) }
+}
+
 /**
  * The part of the canvas not covered by docked panels, in canvas coordinates.
  * The canvas always spans the full window and the panels float over it.
  */
-export function visibleArea({
-  canvasSize,
-  panels,
-  editorOpen,
-  editorHeight,
-}: Pick<State, "canvasSize" | "panels" | "editorOpen" | "editorHeight">) {
+export function visibleArea(state: PanelLayout & Pick<State, "editorOpen" | "editorHeight">) {
+  const { canvasSize, panels, editorOpen, editorHeight } = state
   const docked = window.matchMedia(DESKTOP_QUERY).matches
-  const left = docked && panels.layers ? PANEL_WIDTH.layers : 0
-  const right = docked && panels.inspector ? PANEL_WIDTH.inspector : 0
+  const widths = dockedWidths(state)
+  const left = docked && panels.layers ? widths.layers : 0
+  const right = docked && panels.inspector ? widths.inspector : 0
   const bottom = editorOpen ? editorHeight : 0
   return { x: left, y: 0, width: canvasSize.width - left - right, height: canvasSize.height - bottom }
 }
@@ -166,6 +213,7 @@ export const useCanvasStore = create<State & Actions>()(
         look: "classic",
       },
       panels: { layers: true, inspector: true },
+      panelWidths: PANEL_WIDTH,
       editorHeight: 300,
       canvasSize: { width: 0, height: 0 },
       sizes: {},
@@ -299,6 +347,13 @@ export const useCanvasStore = create<State & Actions>()(
           }
           return { panels }
         }),
+      setPanelWidth: (side, width) =>
+        set((state) => ({
+          panelWidths: {
+            ...state.panelWidths,
+            [side]: Math.round(clamp(width, PANEL_WIDTH_RANGE[side].min, PANEL_WIDTH_RANGE[side].max)),
+          },
+        })),
       setCanvasSize: (canvasSize) => set({ canvasSize }),
       setSize: (id, size) => set((state) => ({ sizes: { ...state.sizes, [id]: size } })),
       setFonts: (fonts) => set({ fonts }),
@@ -308,7 +363,7 @@ export const useCanvasStore = create<State & Actions>()(
     }),
     {
       name: "mermaid-canvas",
-      version: 5,
+      version: 6,
       migrate: (persisted, version) => {
         let state = persisted as Record<string, unknown>
         if (version < 2) {
@@ -332,9 +387,13 @@ export const useCanvasStore = create<State & Actions>()(
           // v5 adds the hand-drawn look; everything saved before was classic.
           state = { ...state, settings: { ...(state.settings as Settings), look: "classic" } }
         }
+        if (version < 6) {
+          // v6 makes the panels resizable; they start at the old fixed widths.
+          state = { ...state, panelWidths: PANEL_WIDTH }
+        }
         return state
       },
-      partialize: ({ diagrams, selectedIds, selectedId, topZ, viewport, settings, panels, editorHeight }) => ({
+      partialize: ({
         diagrams,
         selectedIds,
         selectedId,
@@ -342,6 +401,17 @@ export const useCanvasStore = create<State & Actions>()(
         viewport,
         settings,
         panels,
+        panelWidths,
+        editorHeight,
+      }) => ({
+        diagrams,
+        selectedIds,
+        selectedId,
+        topZ,
+        viewport,
+        settings,
+        panels,
+        panelWidths,
         editorHeight,
       }),
     }
