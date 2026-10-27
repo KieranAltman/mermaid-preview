@@ -1,4 +1,4 @@
-import { MAX_ZOOM, MIN_ZOOM, useCanvasStore, visibleArea, type Viewport } from "@/lib/store"
+import { MAX_ZOOM, MIN_ZOOM, currentDiagrams, useCanvasStore, visibleArea, type Viewport } from "@/lib/store"
 
 const FIT_MARGIN = 64
 // Cards report their size after the first render; until then, assume this.
@@ -116,7 +116,9 @@ export function fitDiagram(id: string, options: CameraOptions = {}) {
 }
 
 export function fitAll(options: CameraOptions = {}) {
-  const { diagrams, sizes } = useCanvasStore.getState()
+  const state = useCanvasStore.getState()
+  const { sizes } = state
+  const diagrams = currentDiagrams(state)
   if (diagrams.length === 0) {
     moveCamera({ x: 0, y: 0, zoom: 1 }, options, TRAVEL)
     return

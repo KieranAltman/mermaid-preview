@@ -1,12 +1,15 @@
 "use client"
 
-import { Trash2 } from "lucide-react"
+import { SquareArrowRight, Trash2 } from "lucide-react"
 
 import { DiagramEditor } from "@/components/panel/diagram-editor"
+import { MoveToCanvasMenu } from "@/components/panel/move-to-canvas"
 import { Panel, PanelToggleSlot, Section } from "@/components/panel/panel-chrome"
 import { AppearanceSettings, CanvasSettings } from "@/components/panel/settings-section"
 import { Button } from "@/components/ui/button"
+import { DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Kbd } from "@/components/ui/kbd"
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { deleteDiagrams } from "@/lib/actions"
 import { modKey } from "@/lib/platform"
@@ -29,18 +32,35 @@ function MultiSelection({ ids }: { ids: string[] }) {
         </li>
       </ul>
       <div className="flex items-center gap-1">
-        <Button variant="outline" onClick={() => setSelection([])}>
+        <MoveToCanvasMenu
+          ids={ids}
+          trigger={
+            <DropdownMenuTrigger render={<Button variant="outline" />}>
+              <SquareArrowRight data-icon="inline-start" />
+              移到画布
+            </DropdownMenuTrigger>
+          }
+        />
+        <Button variant="ghost" onClick={() => setSelection([])}>
           取消选择
         </Button>
         <div className="flex-1" />
-        <Button
-          variant="ghost"
-          className="text-destructive hover:bg-destructive/10 hover:text-destructive"
-          onClick={() => deleteDiagrams(ids)}
-        >
-          <Trash2 data-icon="inline-start" />
-          删除所选
-        </Button>
+        <Tooltip>
+          <TooltipTrigger
+            render={
+              <Button
+                variant="ghost"
+                size="icon"
+                aria-label="删除所选"
+                onClick={() => deleteDiagrams(ids)}
+                className="text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              />
+            }
+          >
+            <Trash2 />
+          </TooltipTrigger>
+          <TooltipContent>删除所选</TooltipContent>
+        </Tooltip>
       </div>
     </div>
   )
@@ -80,7 +100,7 @@ export function InspectorPanel() {
           <AppearanceSettings />
         </Section>
 
-        <Section title="画布">
+        <Section title="背景">
           <CanvasSettings />
         </Section>
       </ScrollArea>

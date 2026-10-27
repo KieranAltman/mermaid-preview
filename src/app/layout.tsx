@@ -20,7 +20,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Mermaid 画布",
+  title: "Mermaid Preview",
   description: "在无限画布上编写、预览和整理 Mermaid 图表，由 Pele 渲染。",
 };
 

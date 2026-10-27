@@ -9,7 +9,7 @@ import { CanvasEmptyState, CanvasHints } from "@/components/canvas/canvas-overla
 import { useDiagramVars } from "@/hooks/use-diagram"
 import { deleteDiagrams } from "@/lib/actions"
 import { openEditor } from "@/lib/editor"
-import { GRID_SIZE, MAX_ZOOM, MIN_ZOOM, snap, useCanvasStore } from "@/lib/store"
+import { GRID_SIZE, MAX_ZOOM, MIN_ZOOM, currentDiagrams, snap, useCanvasStore } from "@/lib/store"
 import { fitAll, fitDiagram, focusDiagram, resetZoom, stopViewportAnimation, zoomBy } from "@/lib/viewport"
 import { cn } from "@/lib/utils"
 
@@ -66,7 +66,7 @@ export function Canvas() {
   // The selection rectangle being dragged out, in canvas coordinates.
   const [marquee, setMarquee] = useState<Rect | null>(null)
 
-  const ids = useCanvasStore(useShallow((s) => s.diagrams.map((d) => d.id)))
+  const ids = useCanvasStore(useShallow((s) => currentDiagrams(s).map((d) => d.id)))
   const viewport = useCanvasStore((s) => s.viewport)
   const showGrid = useCanvasStore((s) => s.settings.showGrid)
   const vars = useDiagramVars()
@@ -168,7 +168,7 @@ export function Canvas() {
         store.setSelection([])
       } else if (mod && event.key.toLowerCase() === "a") {
         event.preventDefault()
-        store.setSelection(store.diagrams.map((d) => d.id))
+        store.setSelection(currentDiagrams(store).map((d) => d.id))
       } else if (selectedIds.length === 0) {
         return
       } else if (event.key === "Delete" || event.key === "Backspace") {
@@ -229,12 +229,13 @@ export function Canvas() {
 
   /** Diagrams whose card overlaps the rectangle (canvas coordinates). */
   const diagramsIn = (rect: Rect) => {
-    const { diagrams, sizes, viewport } = useCanvasStore.getState()
+    const state = useCanvasStore.getState()
+    const { sizes, viewport } = state
     const left = (rect.x - viewport.x) / viewport.zoom
     const top = (rect.y - viewport.y) / viewport.zoom
     const right = left + rect.width / viewport.zoom
     const bottom = top + rect.height / viewport.zoom
-    return diagrams
+    return currentDiagrams(state)
       .filter((d) => {
         const size = sizes[d.id] ?? FALLBACK_SIZE
         return d.x < right && d.x + size.width > left && d.y < bottom && d.y + size.height > top
@@ -243,6 +244,9 @@ export function Canvas() {
   }
 
   const onPointerDown = (event: React.PointerEvent) => {
+    // React bubbles events out of portals, so a menu opened from the canvas
+    // reaches here although it isn't on the canvas.
+    if (!event.currentTarget.contains(event.target as Node)) return
     if (event.target instanceof Element && event.target.closest("[data-canvas-ui]")) return
     if (event.button === 2) return
     stopViewportAnimation()
