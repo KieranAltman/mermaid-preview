@@ -248,7 +248,13 @@ export function Canvas() {
     // reaches here although it isn't on the canvas.
     if (!event.currentTarget.contains(event.target as Node)) return
     if (event.target instanceof Element && event.target.closest("[data-canvas-ui]")) return
-    if (event.button === 2) return
+    if (event.button === 2) {
+      // Right-clicking a card outside the selection selects it, so its menu acts on what's highlighted.
+      const id = (event.target as Element).closest<HTMLElement>("[data-diagram-id]")?.dataset.diagramId
+      const store = useCanvasStore.getState()
+      if (id && !store.selectedIds.includes(id)) store.select(id)
+      return
+    }
     stopViewportAnimation()
     const point = toLocal(event)
     pointers.current.set(event.pointerId, point)
