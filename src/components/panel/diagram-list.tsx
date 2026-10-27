@@ -37,7 +37,7 @@ function DiagramRow({ id }: { id: string }) {
             : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
         )}
       >
-        <span className="min-w-0 flex-1 truncate">{diagram.title}</span>
+        <span className="min-w-0 flex-1 truncate text-xs">{diagram.title}</span>
         {output && !output.ok ? (
           <span className="flex shrink-0 items-center gap-1 text-xs font-normal text-destructive">
             <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
