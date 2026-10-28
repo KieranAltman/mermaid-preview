@@ -33,7 +33,19 @@ export function NewDiagramMenu({
         <Tooltip>
           {/* One button is both the tooltip trigger and the menu trigger. */}
           <TooltipTrigger
-            render={<DropdownMenuTrigger render={<Button variant="ghost" size="icon-sm" aria-label="新建图表" />} />}
+            render={
+              <DropdownMenuTrigger
+                render={
+                  <Button
+                    variant="ghost"
+                    size="icon-sm"
+                    aria-label="新建图表"
+                    // 28px button, 36px to hit, like the "new canvas" button.
+                    className="relative before:absolute before:-inset-[5px]"
+                  />
+                }
+              />
+            }
           >
             <Plus />
           </TooltipTrigger>

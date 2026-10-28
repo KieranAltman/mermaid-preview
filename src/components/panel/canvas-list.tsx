@@ -192,16 +192,16 @@ function CanvasRow({
           className={cn(
             "flex h-8 w-full items-center gap-2 rounded-md pr-9 pl-2 text-left text-xs transition-colors duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             current
-              ? "bg-sidebar-accent font-medium text-sidebar-accent-foreground"
+              ? "bg-sidebar-accent text-sidebar-accent-foreground"
               : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
           )}
         >
           <span className="min-w-0 flex-1 truncate">{canvas.name}</span>
         </button>
-        {/* The count gives way to the menu button on hover and focus. */}
+        {/* The count gives way to the menu button on hover and keyboard focus; touch always shows the button. */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground tabular-nums group-focus-within/row:opacity-0 group-hover/row:opacity-0 group-has-data-popup-open/row:opacity-0"
+          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground tabular-nums group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0 group-has-data-popup-open/row:opacity-0 pointer-coarse:opacity-0"
         >
           {count}
         </span>
@@ -212,7 +212,8 @@ function CanvasRow({
                 variant="ghost"
                 size="icon-xs"
                 aria-label={`「${canvas.name}」的更多操作`}
-                className="absolute top-1 right-1 opacity-0 group-focus-within/row:opacity-100 group-hover/row:opacity-100 focus-visible:opacity-100 data-popup-open:opacity-100 pointer-coarse:opacity-100"
+                // Grown to the row's full 32px height to tap, without reaching the rows around it.
+                className="absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] data-popup-open:opacity-100 pointer-coarse:opacity-100"
               />
             }
           >
@@ -302,6 +303,8 @@ export function CanvasList() {
                 variant="ghost"
                 size="icon-sm"
                 aria-label="新建画布"
+                // 28px button, 36px to hit; the inset counts from inside its 1px border.
+                className="relative before:absolute before:-inset-[5px]"
                 onClick={() => {
                   setOpen(true)
                   setRenamingId(createCanvas())
