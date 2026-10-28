@@ -56,12 +56,22 @@ function ThemeMenu() {
   )
 }
 
+/** The Branch Tail mark in its small cut (brand/mermaid-preview-symbol-small.svg), drawn for 16–32 px. */
 function Logo() {
   return (
-    <svg viewBox="0 0 20 20" className="size-5 shrink-0 text-foreground" aria-hidden>
-      <rect x="1.5" y="2.5" width="7" height="5" rx="1.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
-      <rect x="11.5" y="12.5" width="7" height="5" rx="1.5" fill="currentColor" />
-      <path d="M5 7.5v3.5a2 2 0 0 0 2 2h4.5" fill="none" stroke="currentColor" strokeWidth="1.5" />
+    <svg viewBox="0 0 256 256" className="size-6 shrink-0" aria-hidden>
+      <path
+        className="fill-(--logo-node)"
+        d="M136.49 17.51 L178.49 59.51 A12 12 0 0 1 178.49 76.49 L136.49 118.49 A12 12 0 0 1 119.51 118.49 L77.51 76.49 A12 12 0 0 1 77.51 59.51 L119.51 17.51 A12 12 0 0 1 136.49 17.51 Z"
+      />
+      <path
+        className="fill-(--logo-left)"
+        d="M110 132 H117 Q122 132 122 137 V206 Q122 214 114 218 C90 230 46 228 14 202 Q5 194 17 193 C62 190 99 176 105 138 Q106 132 110 132 Z"
+      />
+      <path
+        className="fill-(--logo-right)"
+        d="M146 132 H139 Q134 132 134 137 V206 Q134 214 142 218 C166 230 210 228 242 202 Q251 194 239 193 C194 190 157 176 151 138 Q150 132 146 132 Z"
+      />
     </svg>
   )
 }
@@ -74,7 +84,10 @@ export function LayersPanel() {
     <Panel side="left" label="图层" open={open}>
       <header className="flex h-12 shrink-0 items-center gap-2 border-b pr-2 pl-4">
         <Logo />
-        <h1 className="flex-1 truncate text-sm font-semibold">Mermaid Preview</h1>
+        {/* Set like the wordmark: "Preview" a step lighter. */}
+        <h1 className="flex-1 truncate text-sm font-semibold">
+          Mermaid <span className="text-(--logo-left)">Preview</span>
+        </h1>
         <ThemeMenu />
         <PanelToggleSlot />
       </header>

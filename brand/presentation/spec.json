@@ -1,0 +1,35 @@
+{
+  "brand": "Mermaid Preview",
+  "tagline": "在无限画布上写、看、整理 Mermaid 图表",
+  "brief": "An infinite-canvas previewer for Mermaid diagrams, rendered by Pele and saved in the browser. For developers and product people who think in diagrams. Black, white and grey only — the tones themselves separate the parts of the mark.",
+  "adjectives": ["precise", "light", "structured", "a little playful"],
+  "criteria": "Success: reads as a diagram tool without drawing a flowchart, nods to the name without a cliché mermaid, recognisable at 16 px, works in one colour and in black / white / grey.",
+  "industry": "software",
+  "nav": ["Canvases", "Templates", "Export"],
+  "brand_color": "#111111",
+  "tile_color": "#111111",
+  "greyscale": false,
+  "final": true,
+  "designer": "Mermaid Preview",
+  "concepts": [
+    {
+      "name": "Branch Tail",
+      "symbol": "../mermaid-preview-symbol.svg",
+      "lockup": "../mermaid-preview-horizontal.svg",
+      "stacked": "../mermaid-preview-stacked.svg",
+      "avatar": "../mermaid-preview-symbol-small.svg",
+      "symbol_on_tile": "../mermaid-preview-symbol-small-reversed.svg",
+      "symbol_on_dark": "../mermaid-preview-symbol-reversed.svg",
+      "lockup_on_dark": "../mermaid-preview-horizontal-reversed.svg",
+      "stacked_on_dark": "../mermaid-preview-stacked-reversed.svg",
+      "idea": "A decision node splits into two branches that flare into a mermaid's tail.",
+      "rationale": [
+        "One sign for both halves of the name: the diagram (a decision and its branches) and the mermaid (the tail)",
+        "Black, graphite and silver separate node, yes-branch and no-branch; the order of contrast stays the same on dark",
+        "Softened corners on a strict diamond: friendly, still exact",
+        "A heavier small cut keeps the idea at 16–32 px; one-colour versions hold through the gaps"
+      ]
+    }
+  ],
+  "recommendation": "Branch Tail in its softened cut, with Geist SemiBold for the wordmark — 'Mermaid' in ink, 'Preview' in graphite."
+}
