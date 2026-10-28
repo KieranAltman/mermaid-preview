@@ -85,7 +85,8 @@ type Actions = {
   addDiagram: (input?: {
     code?: string
     title?: string
-    at?: { x: number; y: number }
+    /** Place it beside this diagram; otherwise beside the selection, or the diagram nearest the view's middle. */
+    near?: string
     animate?: boolean
   }) => string
   updateDiagram: (id: string, patch: Partial<Omit<Diagram, "id">>) => void
@@ -214,14 +215,55 @@ function switchTo(state: State, id: string): Partial<State> {
   }
 }
 
-// Nudge a new diagram away from any diagram sitting at the same spot so
-// repeated "new" clicks fan out instead of stacking invisibly.
-function freeSpot(diagrams: Diagram[], x: number, y: number) {
-  while (diagrams.some((d) => Math.abs(d.x - x) < 8 && Math.abs(d.y - y) < 8)) {
-    x += GRID_SIZE * 2
-    y += GRID_SIZE * 2
+type Rect = { x: number; y: number; width: number; height: number }
+
+// Cards report their size after the first render; until then, assume this.
+const CARD_FALLBACK = { width: 320, height: 160 }
+// Room kept for a diagram that hasn't rendered yet: most templates draw within this.
+const NEW_SIZE = { width: 440, height: 300 }
+// Clear space between a new diagram and its neighbors.
+const GAP = GRID_SIZE * 2
+
+/**
+ * Where a new diagram goes beside `anchor` without touching any diagram in
+ * `taken`: to its right first, the way you'd keep writing, then below, left
+ * and above; if every side is crowded, the nearest clear spot around the right.
+ */
+/** Whether a `size` box at x, y keeps GAP from every rect in `taken`. */
+function isClear(x: number, y: number, size: Size, taken: Rect[]) {
+  return taken.every(
+    (r) =>
+      x + size.width + GAP <= r.x || r.x + r.width + GAP <= x || y + size.height + GAP <= r.y || r.y + r.height + GAP <= y
+  )
+}
+
+// New diagrams placed on an estimated size, with the diagram they were placed beside.
+// Once one reports its real size, it moves if that size runs into a neighbor.
+const placing = new Map<string, Rect>()
+
+function placeNear(anchor: Rect, taken: Rect[], size: Size = NEW_SIZE) {
+  const clear = (x: number, y: number) => isClear(x, y, size, taken)
+  const right = { x: anchor.x + anchor.width + GAP, y: anchor.y }
+  const sides = [
+    right,
+    { x: anchor.x, y: anchor.y + anchor.height + GAP },
+    { x: anchor.x - size.width - GAP, y: anchor.y },
+    { x: anchor.x, y: anchor.y - size.height - GAP },
+  ]
+  const side = sides.find((p) => clear(p.x, p.y))
+  if (side) return side
+  for (let ring = 1; ring <= 40; ring++) {
+    const spots: { x: number; y: number }[] = []
+    for (let i = -ring; i <= ring; i++) {
+      for (let j = -ring; j <= ring; j++) {
+        if (Math.max(Math.abs(i), Math.abs(j)) === ring) spots.push({ x: right.x + i * GAP, y: right.y + j * GAP })
+      }
+    }
+    spots.sort((a, b) => Math.hypot(a.x - right.x, a.y - right.y) - Math.hypot(b.x - right.x, b.y - right.y))
+    const spot = spots.find((p) => clear(p.x, p.y))
+    if (spot) return spot
   }
-  return { x, y }
+  return right
 }
 
 const DEFAULT_CANVAS: Canvas = { id: "default", name: "默认画布", viewport: { x: 0, y: 0, zoom: 1 } }
@@ -283,17 +325,33 @@ export const useCanvasStore = create<State & Actions>()(
       enteringId: null,
 
       addDiagram: (input = {}) => {
-        const { viewport, topZ, settings, currentCanvasId } = get()
-        const diagrams = currentDiagrams(get())
+        const state = get()
+        const { viewport, topZ, settings, currentCanvasId, sizes, selectedId } = state
+        const diagrams = currentDiagrams(state)
         const id = crypto.randomUUID()
-        // Default to the center of the uncovered canvas, in world coordinates.
-        const area = visibleArea(get())
-        let at = input.at ?? {
-          x: (area.x + area.width / 2 - viewport.x) / viewport.zoom - 160,
-          y: (area.y + area.height / 2 - viewport.y) / viewport.zoom - 80,
+        // The middle of the uncovered canvas, in world coordinates.
+        const area = visibleArea(state)
+        const middle = {
+          x: (area.x + area.width / 2 - viewport.x) / viewport.zoom,
+          y: (area.y + area.height / 2 - viewport.y) / viewport.zoom,
         }
+        const rectOf = (d: Diagram): Rect => ({ x: d.x, y: d.y, ...(sizes[d.id] ?? CARD_FALLBACK) })
+        const distance = (d: Diagram) => {
+          const r = rectOf(d)
+          return Math.hypot(r.x + r.width / 2 - middle.x, r.y + r.height / 2 - middle.y)
+        }
+        // Next to what the user is working on: the diagram asked for, the selected one
+        // (usually the one just edited), or else the one nearest the middle of the view.
+        const anchor =
+          diagrams.find((d) => d.id === input.near) ??
+          diagrams.find((d) => d.id === selectedId) ??
+          [...diagrams].sort((a, b) => distance(a) - distance(b))[0]
+        let at = anchor
+          ? placeNear(rectOf(anchor), diagrams.map(rectOf))
+          : { x: middle.x - CARD_FALLBACK.width / 2, y: middle.y - CARD_FALLBACK.height / 2 }
         if (settings.snapToGrid) at = { x: snap(at.x), y: snap(at.y) }
-        const spot = freeSpot(diagrams, Math.round(at.x), Math.round(at.y))
+        const spot = { x: Math.round(at.x), y: Math.round(at.y) }
+        if (anchor) placing.set(id, rectOf(anchor))
         const diagram: Diagram = {
           id,
           canvasId: currentCanvasId,
@@ -356,7 +414,7 @@ export const useCanvasStore = create<State & Actions>()(
         return get().addDiagram({
           code: source.code,
           title: `${source.title} 副本`,
-          at: { x: source.x + GRID_SIZE * 2, y: source.y + GRID_SIZE * 2 },
+          near: source.id,
           animate: options.animate,
         })
       },
@@ -467,7 +525,7 @@ export const useCanvasStore = create<State & Actions>()(
           // view, then step it off any diagram already sitting there.
           const viewport = canvasId === state.currentCanvasId ? state.viewport : target.viewport
           const area = visibleArea(state)
-          const sizeOf = (d: Diagram) => state.sizes[d.id] ?? { width: 320, height: 160 }
+          const sizeOf = (d: Diagram) => state.sizes[d.id] ?? CARD_FALLBACK
           const left = Math.min(...moving.map((d) => d.x))
           const top = Math.min(...moving.map((d) => d.y))
           const right = Math.max(...moving.map((d) => d.x + sizeOf(d).width))
@@ -527,7 +585,23 @@ export const useCanvasStore = create<State & Actions>()(
       setCanvasListOpen: (canvasListOpen) => set({ canvasListOpen }),
       setCanvasListHeight: (canvasListHeight) => set({ canvasListHeight }),
       setCanvasSize: (canvasSize) => set({ canvasSize }),
-      setSize: (id, size) => set((state) => ({ sizes: { ...state.sizes, [id]: size } })),
+      setSize: (id, size) =>
+        set((state) => {
+          const sizes = { ...state.sizes, [id]: size }
+          const anchor = placing.get(id)
+          const diagram = anchor && state.diagrams.find((d) => d.id === id)
+          if (!anchor || !diagram) return { sizes }
+          placing.delete(id)
+          const others = state.diagrams
+            .filter((d) => d.canvasId === diagram.canvasId && d.id !== id)
+            .map((d) => ({ x: d.x, y: d.y, ...(sizes[d.id] ?? CARD_FALLBACK) }))
+          if (isClear(diagram.x, diagram.y, size, others)) return { sizes }
+          // Bigger than estimated and touching a neighbor: find room for its real size.
+          let spot = placeNear(anchor, others, size)
+          if (state.settings.snapToGrid) spot = { x: snap(spot.x), y: snap(spot.y) }
+          const moved = { x: Math.round(spot.x), y: Math.round(spot.y) }
+          return { sizes, diagrams: state.diagrams.map((d) => (d.id === id ? { ...d, ...moved } : d)) }
+        }),
       setFonts: (fonts) => set({ fonts }),
       setHandFontReady: () => set({ handFontReady: true }),
       setEditorOpen: (editorOpen) => set({ editorOpen }),

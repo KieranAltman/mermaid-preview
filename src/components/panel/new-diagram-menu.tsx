@@ -13,6 +13,7 @@ import {
 } from "@/components/ui/dropdown-menu"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useCanvasStore } from "@/lib/store"
+import { revealDiagram } from "@/lib/viewport"
 import { templates } from "@/lib/templates"
 
 export function NewDiagramMenu({
@@ -65,7 +66,7 @@ export function NewDiagramMenu({
           {templates.map((template) => (
             <DropdownMenuItem
               key={template.id}
-              onClick={() => addDiagram({ code: template.code, title: template.label })}
+              onClick={() => revealDiagram(addDiagram({ code: template.code, title: template.label }))}
             >
               {template.label}
             </DropdownMenuItem>

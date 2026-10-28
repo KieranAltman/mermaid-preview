@@ -9,14 +9,13 @@ import {
   ContextMenuSeparator,
   ContextMenuShortcut,
 } from "@/components/ui/context-menu"
-import { deleteDiagrams } from "@/lib/actions"
+import { deleteDiagrams, duplicateDiagram } from "@/lib/actions"
 import { modKey } from "@/lib/platform"
 import { useCanvasStore } from "@/lib/store"
 
 /** The context menu for a diagram, shared by its layer row and its card on the canvas. */
 export function DiagramMenu({ id }: { id: string }) {
   const selectedIds = useCanvasStore((s) => s.selectedIds)
-  const duplicateDiagram = useCanvasStore((s) => s.duplicateDiagram)
   // Right-clicking a diagram inside the selection acts on the whole selection.
   const ids = selectedIds.includes(id) ? selectedIds : [id]
   return (
