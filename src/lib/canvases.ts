@@ -51,7 +51,9 @@ export function moveToCanvas(ids: string[], canvasId: string) {
   })
 }
 
+/** Returns the new canvas's id. */
 export function moveToNewCanvas(ids: string[]) {
   const canvasId = useCanvasStore.getState().addCanvas({ switchTo: false })
   moveToCanvas(ids, canvasId)
+  return canvasId
 }

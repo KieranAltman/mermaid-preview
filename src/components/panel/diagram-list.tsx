@@ -4,6 +4,7 @@ import { Workflow } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import { DiagramMenu } from "@/components/panel/diagram-menu"
+import { consumeDragClick, startLayerDrag, useLayerDrag } from "@/components/panel/layer-drag"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useDiagramRender } from "@/hooks/use-diagram"
@@ -18,14 +19,27 @@ function DiagramRow({ id }: { id: string }) {
   const select = useCanvasStore((s) => s.select)
   const toggleSelection = useCanvasStore((s) => s.toggleSelection)
   const output = useDiagramRender(diagram.code)
+  // Left behind, faded, while the row is carried to another canvas.
+  const lifted = useLayerDrag((drag) => !!drag?.ids.includes(id))
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger render={<li />}>
+      <ContextMenuTrigger
+        render={
+          <li
+            className={cn(
+              "transition-opacity duration-150 motion-reduce:transition-none",
+              lifted && "opacity-40"
+            )}
+          />
+        }
+      >
         <button
           type="button"
           aria-current={selected || undefined}
+          onPointerDown={(event) => startLayerDrag(event, id)}
           onClick={(event) => {
+            if (consumeDragClick()) return
             // Shift adds or removes this row, as on the canvas; the camera stays put.
             if (event.shiftKey) {
               toggleSelection(id)

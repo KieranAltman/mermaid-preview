@@ -21,6 +21,15 @@
       scale: 0.96;
     }
   }
+
+  /* A canvas's count acknowledges the layers just dropped on it. */
+  --animate-count-bump: count-bump 320ms var(--ease-out-quint);
+
+  @keyframes count-bump {
+    35% {
+      scale: 1.3;
+    }
+  }
 }
 
 @theme inline {
@@ -199,6 +208,12 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+  }
+  /* While a layer is dragged, the whole page shows the grab and nothing selects. */
+  [data-layer-drag],
+  [data-layer-drag] * {
+    cursor: grabbing !important;
+    user-select: none;
   }
   body {
     @apply bg-background text-foreground;
