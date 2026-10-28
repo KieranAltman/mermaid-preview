@@ -100,6 +100,42 @@ export function focusDiagram(id: string, options: CameraOptions = {}) {
   moveCamera(target, options, TRAVEL)
 }
 
+/** Brings a diagram into view if any of it lies outside the uncovered canvas; one already in view stays put. */
+export function revealDiagram(id: string, options: CameraOptions = {}) {
+  const state = useCanvasStore.getState()
+  const diagram = state.diagrams.find((d) => d.id === id)
+  if (!diagram) return
+  // A new diagram has no size until its first render; judge it once it has one.
+  if (!state.sizes[id]) {
+    const stop = useCanvasStore.subscribe((next) => {
+      if (!next.sizes[id]) return
+      stop()
+      clearTimeout(giveUp)
+      revealDiagram(id, options)
+    })
+    const giveUp = setTimeout(stop, 2000)
+    return
+  }
+  const { viewport } = state
+  const size = state.sizes[id]
+  const area = visibleArea(state)
+  const width = size.width * viewport.zoom
+  const height = size.height * viewport.zoom
+  // Too big to show whole at this zoom: fit it instead.
+  if (width > area.width - FIT_MARGIN * 2 || height > area.height - FIT_MARGIN * 2) {
+    focusDiagram(id, options)
+    return
+  }
+  // Otherwise pan only as far as it takes, so the rest of the view stays where it was.
+  const left = diagram.x * viewport.zoom + viewport.x
+  const top = diagram.y * viewport.zoom + viewport.y
+  const shift = (start: number, length: number, min: number, max: number) =>
+    start < min ? min - start : start + length > max ? max - (start + length) : 0
+  const dx = shift(left, width, area.x + FIT_MARGIN, area.x + area.width - FIT_MARGIN)
+  const dy = shift(top, height, area.y + FIT_MARGIN, area.y + area.height - FIT_MARGIN)
+  if (dx || dy) moveCamera({ ...viewport, x: viewport.x + dx, y: viewport.y + dy }, options, TRAVEL)
+}
+
 // Fitting a small diagram stops here; past it, labels just get big.
 const FIT_MAX_ZOOM = 2
 

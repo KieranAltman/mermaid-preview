@@ -1,7 +1,7 @@
 "use client"
 
 import { useEffect, useRef, useState } from "react"
-import { ChevronRight, Ellipsis, Plus } from "lucide-react"
+import { ArrowDown, ArrowUp, ChevronRight, Ellipsis, PencilLine, Plus, Trash2 } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
 import {
@@ -29,11 +29,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useCanvasSort } from "@/components/panel/canvas-sort"
+import { useSharedHover } from "@/components/panel/shared-hover"
 import { useLanded, useLayerDrag } from "@/components/panel/layer-drag"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { createCanvas, deleteCanvas, openCanvas } from "@/lib/canvases"
-import { useCanvasStore, type Canvas } from "@/lib/store"
+import { firstMovable, useCanvasStore, type Canvas } from "@/lib/store"
 import { cn } from "@/lib/utils"
 
 const ROW = 32
@@ -44,7 +46,10 @@ const VISIBLE_ROWS = 5
 const MAX_SHARE = 0.5
 const STEP = 16
 
-const rowsHeight = (rows: number) => rows * ROW + (Math.ceil(rows) - 1) * GAP
+// Above and below the rows, so a focus ring on the first or last row isn't clipped by the scroll area.
+const PAD = 4
+
+const rowsHeight = (rows: number) => rows * ROW + (Math.ceil(rows) - 1) * GAP + PAD * 2
 
 /**
  * The rule under the canvas list doubles as its resize handle: drag it, or
@@ -61,7 +66,7 @@ function ListResizeHandle({
   onResize: (height: number) => void
   onReset: () => void
 }) {
-  const clampHeight = (next: number) => Math.round(Math.min(max, Math.max(ROW, next)))
+  const clampHeight = (next: number) => Math.round(Math.min(max, Math.max(rowsHeight(1), next)))
 
   const startResize = (event: React.PointerEvent<HTMLDivElement>) => {
     if (event.button !== 0) return
@@ -88,7 +93,7 @@ function ListResizeHandle({
       aria-orientation="horizontal"
       aria-label="调整画布列表高度"
       aria-controls="canvas-list"
-      aria-valuemin={ROW}
+      aria-valuemin={rowsHeight(1)}
       aria-valuemax={max}
       aria-valuenow={height}
       tabIndex={0}
@@ -151,6 +156,9 @@ function CanvasRow({
   onRename,
   onRenamed,
   onDelete,
+  sorting,
+  onPress,
+  onShift,
 }: {
   canvas: Canvas
   count: number
@@ -160,6 +168,11 @@ function CanvasRow({
   onRename: () => void
   onRenamed: () => void
   onDelete: () => void
+  // Where the row sits while one is carried, and whether it's the one carried.
+  sorting: { offset: number; carried: boolean; settling: boolean; instant: boolean; swallow: () => boolean }
+  // Absent on the default canvas, which stays first.
+  onPress?: (event: React.PointerEvent<HTMLElement>) => void
+  onShift?: { up: boolean; down: boolean; by: (delta: number) => void }
 }) {
   // Choosing "rename" in a menu must not hand focus back to the row as the
   // menu closes, or the name field loses it at once.
@@ -172,6 +185,10 @@ function CanvasRow({
   const rename = () => {
     renameChosen.current = true
     onRename()
+  }
+
+  const onClick = () => {
+    if (!sorting.swallow()) openCanvas(canvas.id)
   }
 
   const over = useLayerDrag((drag) => drag?.target?.kind === "canvas" && drag.target.id === canvas.id)
@@ -194,10 +211,19 @@ function CanvasRow({
         render={
           <li
             data-drop-canvas={canvas.id}
+            // The whole row, menu button included, takes the shared hover.
+            data-hover-row
             data-drop={over ? "over" : landedAt ? "landed" : undefined}
+            data-carried={(sorting.carried && !sorting.settling) || undefined}
+            style={{ translate: `0 ${sorting.offset}px` }}
             className={cn(
-              "group/row relative transition-opacity duration-150 motion-reduce:transition-none",
-              dimmed && "opacity-50"
+              "group/row relative transition-[opacity,translate] duration-200 ease-out-quint motion-reduce:transition-none",
+              dimmed && "opacity-50",
+              // The carried row follows the pointer exactly, then eases into its slot.
+              sorting.carried && "z-10",
+              sorting.carried && !sorting.settling && "transition-none",
+              sorting.settling && "duration-150",
+              sorting.instant && "transition-none"
             )}
           />
         }
@@ -205,13 +231,16 @@ function CanvasRow({
         <button
           type="button"
           aria-current={current || undefined}
-          onClick={() => openCanvas(canvas.id)}
+          onPointerDown={onPress}
+          onClick={onClick}
           onDoubleClick={onRename}
           className={cn(
-            "flex h-8 w-full items-center gap-2 rounded-md pr-9 pl-2 text-left text-xs transition-colors duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
+            "flex h-8 w-full items-center gap-2 rounded-md pr-9 pl-2 text-left text-xs transition-[color,background-color,scale,box-shadow] duration-150 ease-out-quint outline-none focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none",
             current
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+              : "text-sidebar-item hover:text-sidebar-foreground",
+            // Picked up: a card lifted off the list.
+            "group-data-carried/row:scale-[1.02] group-data-carried/row:bg-popover group-data-carried/row:text-popover-foreground group-data-carried/row:shadow-md group-data-carried/row:ring-1 group-data-carried/row:ring-foreground/10"
           )}
         >
           <span className="min-w-0 flex-1 truncate">{canvas.name}</span>
@@ -253,25 +282,61 @@ function CanvasRow({
                 size="icon-xs"
                 aria-label={`「${canvas.name}」的更多操作`}
                 // Grown to the row's full 32px height to tap, without reaching the rows around it.
-                className="absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] group-data-[drop]/row:invisible in-data-[layer-drag]:invisible data-popup-open:opacity-100 pointer-coarse:opacity-100"
+                // Its hover and open fills are a translucent step of ink, so they show on the
+                // hovered and the active row alike, where a solid fill would match the row.
+                className="absolute top-1 right-1 opacity-0 hover:bg-foreground/8 aria-expanded:bg-foreground/8 dark:hover:bg-foreground/10 dark:aria-expanded:bg-foreground/10 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] group-data-[drop]/row:invisible in-data-[layer-drag]:invisible in-data-[canvas-sort]:invisible data-popup-open:opacity-100 pointer-coarse:opacity-100"
               />
             }
           >
             <Ellipsis />
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-32" finalFocus={finalFocus}>
-            <DropdownMenuItem onClick={rename}>重命名</DropdownMenuItem>
+            <DropdownMenuItem onClick={rename}>
+              <PencilLine />
+              重命名
+            </DropdownMenuItem>
+            {onShift && (
+              <>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem disabled={!onShift.up} onClick={() => onShift.by(-1)}>
+                  <ArrowUp />
+                  上移
+                </DropdownMenuItem>
+                <DropdownMenuItem disabled={!onShift.down} onClick={() => onShift.by(1)}>
+                  <ArrowDown />
+                  下移
+                </DropdownMenuItem>
+              </>
+            )}
             <DropdownMenuSeparator />
             <DropdownMenuItem variant="destructive" disabled={!deletable} onClick={onDelete}>
+              <Trash2 />
               删除
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </ContextMenuTrigger>
       <ContextMenuContent className="w-32" finalFocus={finalFocus}>
-        <ContextMenuItem onClick={rename}>重命名</ContextMenuItem>
+        <ContextMenuItem onClick={rename}>
+          <PencilLine />
+          重命名
+        </ContextMenuItem>
+        {onShift && (
+          <>
+            <ContextMenuSeparator />
+            <ContextMenuItem disabled={!onShift.up} onClick={() => onShift.by(-1)}>
+              <ArrowUp />
+              上移
+            </ContextMenuItem>
+            <ContextMenuItem disabled={!onShift.down} onClick={() => onShift.by(1)}>
+              <ArrowDown />
+              下移
+            </ContextMenuItem>
+          </>
+        )}
         <ContextMenuSeparator />
         <ContextMenuItem variant="destructive" disabled={!deletable} onClick={onDelete}>
+          <Trash2 />
           删除
         </ContextMenuItem>
       </ContextMenuContent>
@@ -301,6 +366,10 @@ export function CanvasList() {
   const [confirmOpen, setConfirmOpen] = useState(false)
   const current = canvases.find((c) => c.id === currentId)
   const dropNew = useLayerDrag((drag) => drag?.target?.kind === "new")
+  const moveCanvas = useCanvasStore((s) => s.moveCanvas)
+  const sorter = useCanvasSort(ROW + GAP)
+  const first = firstMovable(canvases)
+  const hover = useSharedHover<HTMLUListElement>()
 
   const requestDelete = (canvas: Canvas) => {
     // Nothing is lost with an empty canvas; undo still covers a slip.
@@ -313,14 +382,14 @@ export function CanvasList() {
   }
 
   // Never taller than all the rows, so dragging down doesn't open a gap.
-  const maxHeight = Math.max(ROW, Math.min(rowsHeight(canvases.length), windowHeight * MAX_SHARE))
+  const maxHeight = Math.max(rowsHeight(1), Math.min(rowsHeight(canvases.length), windowHeight * MAX_SHARE))
   const autoRows = Math.min(canvases.length, canvases.length > VISIBLE_ROWS ? VISIBLE_ROWS + 0.5 : VISIBLE_ROWS)
-  const height = Math.min(maxHeight, Math.max(ROW, storedHeight ?? rowsHeight(autoRows)))
+  const height = Math.min(maxHeight, Math.max(rowsHeight(1), storedHeight ?? rowsHeight(autoRows)))
 
   return (
-    <section aria-label="画布" className="relative flex shrink-0 flex-col border-b pb-2">
+    <section aria-label="画布" className="relative flex shrink-0 flex-col border-b pb-1">
       {/* Label on the same 16px edge as the layers heading below. */}
-      <div className="flex items-center gap-1 pt-3 pr-3 pb-1 pl-3">
+      <div className="flex items-center gap-1 pt-3 pr-3 pl-3">
         <button
           type="button"
           aria-expanded={open}
@@ -364,8 +433,9 @@ export function CanvasList() {
 
       {open && (
         <ScrollArea id="canvas-list" style={{ height }}>
-          <ul className="flex flex-col gap-px px-3">
-            {canvases.map((canvas) => (
+          <ul {...hover.listProps} className="relative isolate flex flex-col gap-px px-3 py-1 select-none">
+            {hover.highlight}
+            {canvases.map((canvas, index) => (
               <CanvasRow
                 key={canvas.id}
                 canvas={canvas}
@@ -376,6 +446,23 @@ export function CanvasList() {
                 onRename={() => setRenamingId(canvas.id)}
                 onRenamed={() => setRenamingId(null)}
                 onDelete={() => requestDelete(canvas)}
+                sorting={{
+                  offset: sorter.offset(index),
+                  carried: sorter.sort?.id === canvas.id,
+                  settling: !!sorter.sort?.settling,
+                  instant: sorter.instant,
+                  swallow: sorter.consumeClick,
+                }}
+                onPress={index >= first ? (event) => sorter.press(event, canvas.id) : undefined}
+                onShift={
+                  index >= first
+                    ? {
+                        up: index > first,
+                        down: index < canvases.length - 1,
+                        by: (delta) => moveCanvas(canvas.id, index + delta),
+                      }
+                    : undefined
+                }
               />
             ))}
           </ul>

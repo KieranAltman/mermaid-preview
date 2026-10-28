@@ -1,9 +1,16 @@
 "use client"
 
+import { ChevronDown } from "lucide-react"
 import { useTheme } from "next-themes"
 
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuRadioGroup,
+  DropdownMenuRadioItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 import { Label } from "@/components/ui/label"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Slider } from "@/components/ui/slider"
 import { Switch } from "@/components/ui/switch"
 import { useCanvasStore } from "@/lib/store"
@@ -42,7 +49,7 @@ function SliderField({
   onChange: (value: number) => void
 }) {
   return (
-    <div className="flex flex-col gap-2.5">
+    <div className="flex flex-col gap-2">
       <div className="flex items-center justify-between">
         <Label id={`${id}-label`}>{label}</Label>
         <span className="text-xs text-muted-foreground tabular-nums">{value} px</span>
@@ -62,23 +69,20 @@ function SliderField({
 function SwitchField({
   id,
   label,
-  description,
   checked,
   onChange,
 }: {
   id: string
   label: string
-  description: string
   checked: boolean
   onChange: (checked: boolean) => void
 }) {
   return (
-    <div className="flex items-start justify-between gap-4">
-      <div className="flex flex-col gap-0.5">
-        <Label htmlFor={id}>{label}</Label>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
-      <Switch id={id} checked={checked} onCheckedChange={onChange} />
+    <div className="flex min-h-5 items-center justify-between gap-4">
+      <Label htmlFor={id} className="flex-1">
+        {label}
+      </Label>
+      <Switch id={id} size="sm" checked={checked} onCheckedChange={onChange} />
     </div>
   )
 }
@@ -86,35 +90,36 @@ function SwitchField({
 export function AppearanceSettings() {
   const settings = useCanvasStore((s) => s.settings)
   const updateSettings = useCanvasStore((s) => s.updateSettings)
+  const theme = getDiagramTheme(settings.themeId)
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-1.5">
         <Label htmlFor="diagram-theme">配色</Label>
-        <Select value={settings.themeId} onValueChange={(themeId) => themeId && updateSettings({ themeId })}>
-          <SelectTrigger id="diagram-theme" className="w-full">
-            {/* Base UI shows the raw value by default; map it back to swatch + label. */}
-            <SelectValue>
-              {(themeId: string) => {
-                const theme = getDiagramTheme(themeId)
-                return (
-                  <>
-                    <Swatch theme={theme} />
-                    {theme.label}
-                  </>
-                )
-              }}
-            </SelectValue>
-          </SelectTrigger>
-          <SelectContent>
-            {diagramThemes.map((theme) => (
-              <SelectItem key={theme.id} value={theme.id}>
-                <Swatch theme={theme} />
-                {theme.label}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
+        <DropdownMenu>
+          {/* Looks like a field, opens like every other menu in the app. */}
+          <DropdownMenuTrigger
+            id="diagram-theme"
+            className="flex h-7 w-full items-center gap-2 rounded-[min(var(--radius-md),10px)] border border-input bg-field pr-2 pl-2.5 text-xs transition-colors duration-150 outline-none hover:border-foreground/20 focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:border-foreground/20"
+          >
+            <Swatch theme={theme} />
+            <span className="min-w-0 flex-1 truncate text-left">{theme.label}</span>
+            <ChevronDown aria-hidden className="size-3.5 shrink-0 text-muted-foreground" />
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="start">
+            <DropdownMenuRadioGroup
+              value={settings.themeId}
+              onValueChange={(themeId: string) => updateSettings({ themeId })}
+            >
+              {diagramThemes.map((option) => (
+                <DropdownMenuRadioItem key={option.id} value={option.id} closeOnClick>
+                  <Swatch theme={option} />
+                  {option.label}
+                </DropdownMenuRadioItem>
+              ))}
+            </DropdownMenuRadioGroup>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
       <SliderField
         id="font-size"
@@ -144,18 +149,16 @@ export function CanvasSettings() {
   const updateSettings = useCanvasStore((s) => s.updateSettings)
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-3">
       <SwitchField
         id="show-grid"
         label="显示网格"
-        description="在画布背景上显示点阵"
         checked={showGrid}
         onChange={(showGrid) => updateSettings({ showGrid })}
       />
       <SwitchField
         id="snap-to-grid"
         label="吸附到网格"
-        description="拖动时按 24 px 对齐位置"
         checked={snapToGrid}
         onChange={(snapToGrid) => updateSettings({ snapToGrid })}
       />

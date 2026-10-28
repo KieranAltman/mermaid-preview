@@ -23,7 +23,7 @@ export function StorageUsage() {
       <Dialog>
         <DialogTrigger
           aria-label={`本地存储已用 ${formatSize(used)}，约占 ${formatPercent(percent)}。存储与导出`}
-          className="flex w-full flex-col gap-2 rounded-md px-2 pt-1.5 pb-2.5 text-left transition-colors duration-150 outline-none hover:bg-sidebar-accent/60 focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-sidebar-accent/60"
+          className="flex w-full flex-col gap-2 rounded-md px-2 pt-1.5 pb-2.5 text-left transition-colors duration-150 outline-none hover:bg-sidebar-hover focus-visible:ring-3 focus-visible:ring-ring/50 data-popup-open:bg-sidebar-hover"
         >
           <span className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">

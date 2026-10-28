@@ -7,7 +7,7 @@ import { DiagramCard } from "@/components/canvas/diagram-card"
 import { ZoomControls } from "@/components/canvas/zoom-controls"
 import { CanvasEmptyState, CanvasHints } from "@/components/canvas/canvas-overlays"
 import { useDiagramVars } from "@/hooks/use-diagram"
-import { deleteDiagrams } from "@/lib/actions"
+import { deleteDiagrams, duplicateDiagram } from "@/lib/actions"
 import { openEditor } from "@/lib/editor"
 import { GRID_SIZE, MAX_ZOOM, MIN_ZOOM, currentDiagrams, snap, useCanvasStore } from "@/lib/store"
 import { fitAll, fitDiagram, focusDiagram, resetZoom, stopViewportAnimation, zoomBy } from "@/lib/viewport"
@@ -191,7 +191,7 @@ export function Canvas() {
         openEditor()
       } else if (mod && event.key.toLowerCase() === "d") {
         event.preventDefault()
-        store.duplicateDiagram(selected.id, instant)
+        duplicateDiagram(selected.id, instant)
       }
     }
     const onKeyUp = (event: KeyboardEvent) => {

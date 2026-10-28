@@ -19,7 +19,7 @@ export function CodePreview({ diagram }: { diagram: Diagram }) {
   return (
     <div className="flex flex-col gap-1.5">
       <div className="flex items-baseline justify-between gap-3">
-        <span className="shrink-0 text-sm font-medium whitespace-nowrap">Mermaid 代码</span>
+        <span className="shrink-0 text-xs whitespace-nowrap">Mermaid 代码</span>
         <RenderStatus code={diagram.code} className="min-w-0" />
       </div>
       <button

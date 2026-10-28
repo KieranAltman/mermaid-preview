@@ -6,6 +6,7 @@ import { useShallow } from "zustand/react/shallow"
 import { DiagramMenu } from "@/components/panel/diagram-menu"
 import { consumeDragClick, startLayerDrag, useLayerDrag } from "@/components/panel/layer-drag"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
+import { useSharedHover } from "@/components/panel/shared-hover"
 import { ContextMenu, ContextMenuTrigger } from "@/components/ui/context-menu"
 import { useDiagramRender } from "@/hooks/use-diagram"
 import { currentDiagrams, useCanvasStore } from "@/lib/store"
@@ -27,6 +28,7 @@ function DiagramRow({ id }: { id: string }) {
       <ContextMenuTrigger
         render={
           <li
+            data-hover-row
             className={cn(
               "transition-opacity duration-150 motion-reduce:transition-none",
               lifted && "opacity-40"
@@ -53,7 +55,7 @@ function DiagramRow({ id }: { id: string }) {
             "flex h-8 w-full items-center gap-2 rounded-md px-2 text-left text-sm transition-colors duration-150 outline-none focus-visible:ring-3 focus-visible:ring-ring/50",
             selected
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground"
+              : "text-sidebar-item hover:text-sidebar-foreground"
           )}
         >
           <span className="min-w-0 flex-1 truncate text-xs">{diagram.title}</span>
@@ -76,6 +78,7 @@ function DiagramRow({ id }: { id: string }) {
 
 export function DiagramList() {
   const ids = useCanvasStore(useShallow((s) => currentDiagrams(s).map((d) => d.id)))
+  const hover = useSharedHover<HTMLUListElement>()
 
   if (ids.length === 0) {
     return (
@@ -94,7 +97,8 @@ export function DiagramList() {
   }
 
   return (
-    <ul className="flex flex-col gap-px">
+    <ul {...hover.listProps} className="relative isolate flex flex-col gap-px">
+      {hover.highlight}
       {ids.map((id) => (
         <DiagramRow key={id} id={id} />
       ))}

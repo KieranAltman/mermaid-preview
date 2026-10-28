@@ -16,7 +16,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { useDiagramRender, useDiagramVars, useRenderSettings } from "@/hooks/use-diagram"
-import { copyCode, copySvg, deleteDiagrams, downloadPng, downloadSvg } from "@/lib/actions"
+import { copyCode, copySvg, deleteDiagrams, downloadPng, downloadSvg, duplicateDiagram } from "@/lib/actions"
 import { useCanvasStore, type Diagram } from "@/lib/store"
 import { focusDiagram } from "@/lib/viewport"
 
@@ -45,7 +45,6 @@ function IconAction({
 
 export function DiagramEditor({ diagram }: { diagram: Diagram }) {
   const updateDiagram = useCanvasStore((s) => s.updateDiagram)
-  const duplicateDiagram = useCanvasStore((s) => s.duplicateDiagram)
   const output = useDiagramRender(diagram.code)
   const settings = useRenderSettings()
   const vars = useDiagramVars()

@@ -2,6 +2,7 @@ import { toast } from "sonner"
 
 import { downloadBlob, exportSvg, svgToPng, type RenderSettings } from "@/lib/pele"
 import { useCanvasStore } from "@/lib/store"
+import { revealDiagram, type CameraOptions } from "@/lib/viewport"
 import type { PeleVars } from "@/lib/themes"
 import { zip, type ZipEntry } from "@/lib/zip"
 
@@ -13,6 +14,13 @@ export function deleteDiagrams(ids: string[]) {
   toast(message, {
     action: { label: "撤销", onClick: () => restoreDiagrams(removed) },
   })
+}
+
+/** Duplicates a diagram beside the original and brings the copy into view. */
+export function duplicateDiagram(id: string, options: CameraOptions = {}) {
+  const copy = useCanvasStore.getState().duplicateDiagram(id, options)
+  if (copy) revealDiagram(copy, options)
+  return copy
 }
 
 function safeName(name: string, fallback: string) {

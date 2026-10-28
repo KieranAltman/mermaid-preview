@@ -1,7 +1,7 @@
 "use client"
 
 import type { ReactElement } from "react"
-import { Plus } from "lucide-react"
+import { Plus, SquareArrowRight } from "lucide-react"
 
 import {
   ContextMenuItem,
@@ -59,7 +59,10 @@ export function MoveToCanvasSubmenu({ ids }: { ids: string[] }) {
   const others = useOtherCanvases()
   return (
     <ContextMenuSub>
-      <ContextMenuSubTrigger>移到画布</ContextMenuSubTrigger>
+      <ContextMenuSubTrigger>
+        <SquareArrowRight />
+        移到画布
+      </ContextMenuSubTrigger>
       <ContextMenuSubContent className="w-44">
         {others.map((canvas) => (
           <ContextMenuItem key={canvas.id} onClick={() => moveToCanvas(ids, canvas.id)}>
