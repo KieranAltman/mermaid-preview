@@ -3,6 +3,7 @@ import { toast } from "sonner"
 import { downloadBlob, exportSvg, svgToPng, type RenderSettings } from "@/lib/pele"
 import { useCanvasStore } from "@/lib/store"
 import type { PeleVars } from "@/lib/themes"
+import { zip, type ZipEntry } from "@/lib/zip"
 
 export function deleteDiagrams(ids: string[]) {
   const { removeDiagrams, restoreDiagrams } = useCanvasStore.getState()
@@ -14,9 +15,23 @@ export function deleteDiagrams(ids: string[]) {
   })
 }
 
+function safeName(name: string, fallback: string) {
+  return name.trim().replace(/[\\/:*?"<>|\u0000-\u001f]+/g, "-").replace(/^\.+/, "") || fallback
+}
+
 function fileName(title: string, extension: string) {
-  const base = title.trim().replace(/[\\/:*?"<>|]+/g, "-") || "diagram"
-  return `${base}.${extension}`
+  return `${safeName(title, "diagram")}.${extension}`
+}
+
+/** Safe names, numbered when two would land on the same file: "草稿", "草稿 (2)". */
+function uniqueNames(names: string[], fallback: string) {
+  const seen = new Map<string, number>()
+  return names.map((name) => {
+    const base = safeName(name, fallback)
+    const n = (seen.get(base.toLowerCase()) ?? 0) + 1
+    seen.set(base.toLowerCase(), n)
+    return n === 1 ? base : `${base} (${n})`
+  })
 }
 
 type ExportInput = {
@@ -61,9 +76,63 @@ export async function copyCode(code: string) {
   toast.success("Mermaid 代码已复制")
 }
 
+const today = () => new Date().toISOString().slice(0, 10)
+
 /** Downloads the saved canvas as JSON: otherwise its only copy lives in this browser. */
 export function downloadBackup() {
   const data = localStorage.getItem(useCanvasStore.persist.getOptions().name!) ?? "{}"
-  const date = new Date().toISOString().slice(0, 10)
-  downloadBlob(new Blob([data], { type: "application/json" }), `mermaid-preview-备份-${date}.json`)
+  downloadBlob(new Blob([data], { type: "application/json" }), `mermaid-preview-备份-${today()}.json`)
+}
+
+/** The chosen canvases in list order, each with its diagrams. */
+function canvasGroups(canvasIds: string[]) {
+  const { canvases, diagrams } = useCanvasStore.getState()
+  return canvases
+    .filter((c) => canvasIds.includes(c.id))
+    .map((canvas) => ({ canvas, diagrams: diagrams.filter((d) => d.canvasId === canvas.id) }))
+}
+
+function exported(groups: ReturnType<typeof canvasGroups>) {
+  const diagrams = groups.reduce((sum, g) => sum + g.diagrams.length, 0)
+  toast.success(groups.length === 1 ? `已导出 ${diagrams} 张图表` : `已导出 ${groups.length} 张画布、${diagrams} 张图表`)
+}
+
+/** A ZIP with a folder per canvas and a .mmd per diagram; empty canvases keep their folder. */
+export function exportZip(canvasIds: string[]) {
+  const groups = canvasGroups(canvasIds)
+  const folders = uniqueNames(
+    groups.map((g) => g.canvas.name),
+    "canvas"
+  )
+  const entries: ZipEntry[] = groups.flatMap((group, i) => {
+    const files = uniqueNames(
+      group.diagrams.map((d) => d.title),
+      "diagram"
+    )
+    return [
+      { path: `${folders[i]}/`, text: null },
+      ...group.diagrams.map((d, j) => ({ path: `${folders[i]}/${files[j]}.mmd`, text: d.code })),
+    ]
+  })
+  const name = groups.length === 1 ? folders[0] : "mermaid-preview"
+  downloadBlob(zip(entries), `${name}-${today()}.zip`)
+  exported(groups)
+}
+
+/** One Markdown file: a heading per canvas, a mermaid code block per diagram. */
+export function exportMarkdown(canvasIds: string[]) {
+  const groups = canvasGroups(canvasIds)
+  const block = (code: string) => {
+    // The fence outruns any backticks inside the code.
+    const fence = "`".repeat(Math.max(3, ...(code.match(/`+/g) ?? []).map((run) => run.length + 1)))
+    return `${fence}mermaid\n${code}\n${fence}`
+  }
+  const sections = groups.map(({ canvas, diagrams }) =>
+    [`## ${canvas.name}`, ...(diagrams.length ? diagrams.map((d) => `### ${d.title}\n\n${block(d.code)}`) : ["（空画布）"])].join(
+      "\n\n"
+    )
+  )
+  const markdown = [`# Mermaid Preview · ${today()}`, ...sections].join("\n\n") + "\n"
+  downloadBlob(new Blob([markdown], { type: "text/markdown" }), `mermaid-preview-${today()}.md`)
+  exported(groups)
 }
