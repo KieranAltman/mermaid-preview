@@ -1,8 +1,10 @@
 "use client"
 
+import { useState } from "react"
 import { Workflow } from "lucide-react"
 import { useShallow } from "zustand/react/shallow"
 
+import { DiagramTypeIcon } from "@/components/icons/diagram-icons"
 import { DiagramMenu } from "@/components/panel/diagram-menu"
 import { consumeDragClick, startLayerDrag, useLayerDrag } from "@/components/panel/layer-drag"
 import { NewDiagramMenu } from "@/components/panel/new-diagram-menu"
@@ -20,6 +22,9 @@ function DiagramRow({ id }: { id: string }) {
   const select = useCanvasStore((s) => s.select)
   const toggleSelection = useCanvasStore((s) => s.toggleSelection)
   const output = useDiagramRender(diagram.code)
+  // While the code has an error, the row keeps the type it last drew as.
+  const [type, setType] = useState<string | null>(null)
+  if (output?.ok && output.result.type !== type) setType(output.result.type)
   // Left behind, faded, while the row is carried to another canvas.
   const lifted = useLayerDrag((drag) => !!drag?.ids.includes(id))
 
@@ -58,15 +63,25 @@ function DiagramRow({ id }: { id: string }) {
               : "text-sidebar-item hover:text-sidebar-foreground"
           )}
         >
-          <span className="min-w-0 flex-1 truncate text-xs">{diagram.title}</span>
-          {output && !output.ok ? (
+          {/* The type as an icon; the slot is held before the first render so the title doesn't shift.
+              Code that has never drawn gets the generic icon. */}
+          {type || (output && !output.ok) ? (
+            <DiagramTypeIcon
+              type={type}
+              aria-hidden
+              className={cn("size-3.5 shrink-0", selected ? "text-sidebar-accent-foreground" : "text-muted-foreground")}
+            />
+          ) : (
+            <span aria-hidden className="size-3.5 shrink-0" />
+          )}
+          <span className="min-w-0 flex-1 truncate text-xs">
+            {diagram.title}
+            {type && <span className="sr-only">，{typeLabel(type)}</span>}
+          </span>
+          {output && !output.ok && (
             <span className="flex shrink-0 items-center gap-1 text-xs font-normal text-destructive">
               <span className="size-1.5 rounded-full bg-destructive" aria-hidden />
               有错误
-            </span>
-          ) : (
-            <span className="shrink-0 text-xs font-normal text-muted-foreground">
-              {output?.ok && typeLabel(output.result.type)}
             </span>
           )}
         </button>

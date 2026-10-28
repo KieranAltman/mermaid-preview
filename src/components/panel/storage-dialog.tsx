@@ -33,7 +33,7 @@ export const levelMessage: Record<Exclude<StorageLevel, "ok">, string> = {
 export function LevelIcon({ level, className }: { level: StorageLevel; className?: string }) {
   if (level === "ok") return null
   const Icon = level === "danger" ? OctagonAlert : TriangleAlert
-  return <Icon aria-hidden className={cn("size-3.5 shrink-0", levelText[level], className)} />
+  return <Icon aria-hidden className={cn("size-3 shrink-0", levelText[level], className)} />
 }
 
 type Format = "zip" | "markdown" | "backup"

@@ -2,6 +2,7 @@
 
 import { ChevronDown, Plus } from "lucide-react"
 
+import { DiagramTypeIcon } from "@/components/icons/diagram-icons"
 import { Button } from "@/components/ui/button"
 import {
   DropdownMenu,
@@ -68,6 +69,7 @@ export function NewDiagramMenu({
               key={template.id}
               onClick={() => revealDiagram(addDiagram({ code: template.code, title: template.label }))}
             >
+              <DiagramTypeIcon type={template.id} />
               {template.label}
             </DropdownMenuItem>
           ))}
