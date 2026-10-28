@@ -298,7 +298,7 @@ export function LayerDragGhost() {
       <div className="relative flex h-7 items-center gap-1.5 rounded-md bg-popover px-2 text-xs text-popover-foreground shadow-lg ring-1 ring-foreground/10">
         <span className="min-w-0 flex-1 truncate">{current.label}</span>
         {many && (
-          <span className="shrink-0 rounded-full bg-selection px-1.5 text-[0.6875rem] leading-4 font-medium text-white tabular-nums">
+          <span className="shrink-0 rounded-full bg-selection px-1.5 text-[0.6875rem] leading-4 font-medium text-primary-foreground tabular-nums">
             {current.ids.length}
           </span>
         )}

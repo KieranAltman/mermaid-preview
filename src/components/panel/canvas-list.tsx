@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { useCanvasSort } from "@/components/panel/canvas-sort"
+import { useSharedHover } from "@/components/panel/shared-hover"
 import { useLanded, useLayerDrag } from "@/components/panel/layer-drag"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
@@ -210,6 +211,8 @@ function CanvasRow({
         render={
           <li
             data-drop-canvas={canvas.id}
+            // The whole row, menu button included, takes the shared hover.
+            data-hover-row
             data-drop={over ? "over" : landedAt ? "landed" : undefined}
             data-carried={(sorting.carried && !sorting.settling) || undefined}
             style={{ translate: `0 ${sorting.offset}px` }}
@@ -235,7 +238,7 @@ function CanvasRow({
             "flex h-8 w-full items-center gap-2 rounded-md pr-9 pl-2 text-left text-xs transition-[color,background-color,scale,box-shadow] duration-150 ease-out-quint outline-none focus-visible:ring-3 focus-visible:ring-ring/50 motion-reduce:transition-none",
             current
               ? "bg-sidebar-accent text-sidebar-accent-foreground"
-              : "text-sidebar-foreground/80 hover:bg-sidebar-accent/60 hover:text-sidebar-foreground",
+              : "text-sidebar-item hover:text-sidebar-foreground",
             // Picked up: a card lifted off the list.
             "group-data-carried/row:scale-[1.02] group-data-carried/row:bg-popover group-data-carried/row:text-popover-foreground group-data-carried/row:shadow-md group-data-carried/row:ring-1 group-data-carried/row:ring-foreground/10"
           )}
@@ -279,7 +282,9 @@ function CanvasRow({
                 size="icon-xs"
                 aria-label={`「${canvas.name}」的更多操作`}
                 // Grown to the row's full 32px height to tap, without reaching the rows around it.
-                className="absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] group-data-[drop]/row:invisible in-data-[layer-drag]:invisible in-data-[canvas-sort]:invisible data-popup-open:opacity-100 pointer-coarse:opacity-100"
+                // Its hover and open fills are a translucent step of ink, so they show on the
+                // hovered and the active row alike, where a solid fill would match the row.
+                className="absolute top-1 right-1 opacity-0 hover:bg-foreground/8 aria-expanded:bg-foreground/8 dark:hover:bg-foreground/10 dark:aria-expanded:bg-foreground/10 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] group-data-[drop]/row:invisible in-data-[layer-drag]:invisible in-data-[canvas-sort]:invisible data-popup-open:opacity-100 pointer-coarse:opacity-100"
               />
             }
           >
@@ -364,6 +369,7 @@ export function CanvasList() {
   const moveCanvas = useCanvasStore((s) => s.moveCanvas)
   const sorter = useCanvasSort(ROW + GAP)
   const first = firstMovable(canvases)
+  const hover = useSharedHover<HTMLUListElement>()
 
   const requestDelete = (canvas: Canvas) => {
     // Nothing is lost with an empty canvas; undo still covers a slip.
@@ -427,7 +433,8 @@ export function CanvasList() {
 
       {open && (
         <ScrollArea id="canvas-list" style={{ height }}>
-          <ul className="flex flex-col gap-px px-3 py-1 select-none">
+          <ul {...hover.listProps} className="relative isolate flex flex-col gap-px px-3 py-1 select-none">
+            {hover.highlight}
             {canvases.map((canvas, index) => (
               <CanvasRow
                 key={canvas.id}

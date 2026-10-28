@@ -42,6 +42,8 @@
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-item: var(--sidebar-item);
   --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
   --color-sidebar-foreground: var(--sidebar-foreground);
@@ -110,7 +112,7 @@
   --danger: oklch(0.52 0.2 27);
   --border: oklch(0.2 0.02 260 / 0.1);
   --input: oklch(0.2 0.02 260 / 0.14);
-  --ring: oklch(0.62 0.17 259);
+  --ring: oklch(0.42 0.01 260);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -121,10 +123,14 @@
   --sidebar-foreground: oklch(0.19 0.008 260);
   --sidebar-primary: oklch(0.24 0.01 260);
   --sidebar-primary-foreground: oklch(0.985 0.002 260);
-  --sidebar-accent: oklch(0.95 0.005 260);
-  --sidebar-accent-foreground: oklch(0.24 0.01 260);
+  /* List rows: hover and active are two clear lightness steps of the same grey. */
+  --sidebar-hover: oklch(0.955 0.004 260);
+  --sidebar-accent: oklch(0.905 0.006 260);
+  --sidebar-accent-foreground: oklch(0.16 0.01 260);
+  /* Unselected row names: a clear step lighter than the active row, still darker than counts and types. */
+  --sidebar-item: oklch(0.45 0.01 260);
   --sidebar-border: oklch(0.2 0.02 260 / 0.1);
-  --sidebar-ring: oklch(0.62 0.17 259);
+  --sidebar-ring: oklch(0.42 0.01 260);
 
   /* Surface layers, back to front: canvas < field (recessed wells) < sidebar
      (panels) < raised (buttons). Each step is an L gap; hue stays at 260. */
@@ -142,7 +148,8 @@
   --code-operator: oklch(0.52 0.17 15);
   --code-muted: var(--muted-foreground);
   --canvas-dot: oklch(0.2 0.02 260 / 0.16);
-  --selection: oklch(0.6 0.19 259);
+  /* Selection is ink, not a hue: the interface stays black, white and grey. */
+  --selection: oklch(0.24 0.01 260);
   /* The logo's greys (brand/README.md): node, left branch, right branch. */
   --logo-node: #111111;
   --logo-left: #6e6e6e;
@@ -174,7 +181,7 @@
   --danger: var(--destructive);
   --border: oklch(0.28 0.007 260);
   --input: oklch(0.32 0.008 260);
-  --ring: oklch(0.66 0.14 259);
+  --ring: oklch(0.78 0.006 260);
   --chart-1: oklch(0.87 0 0);
   --chart-2: oklch(0.556 0 0);
   --chart-3: oklch(0.439 0 0);
@@ -184,10 +191,12 @@
   --sidebar-foreground: oklch(0.95 0.004 260);
   --sidebar-primary: oklch(0.93 0.004 260);
   --sidebar-primary-foreground: oklch(0.2 0.006 260);
-  --sidebar-accent: oklch(0.25 0.007 260);
-  --sidebar-accent-foreground: oklch(0.95 0.004 260);
+  --sidebar-hover: oklch(0.26 0.007 260);
+  --sidebar-accent: oklch(0.345 0.008 260);
+  --sidebar-accent-foreground: oklch(0.985 0.002 260);
+  --sidebar-item: oklch(0.78 0.006 260);
   --sidebar-border: oklch(0.27 0.007 260);
-  --sidebar-ring: oklch(0.66 0.14 259);
+  --sidebar-ring: oklch(0.78 0.006 260);
 
   /* Same order as light; the top layer stays the brightest. */
   --canvas: oklch(0.145 0.004 260);
@@ -203,7 +212,7 @@
   --code-operator: oklch(0.76 0.13 15);
   --code-muted: var(--muted-foreground);
   --canvas-dot: oklch(0.36 0.008 260);
-  --selection: oklch(0.68 0.15 259);
+  --selection: oklch(0.93 0.004 260);
   /* Reversed: the node brightest, the branches stepping down, as in the light logo. */
   --logo-node: #ffffff;
   --logo-left: #a3a3a3;

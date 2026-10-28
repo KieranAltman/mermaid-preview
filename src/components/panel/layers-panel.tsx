@@ -38,15 +38,15 @@ function ThemeMenu() {
       </Tooltip>
       <DropdownMenuContent align="end" className="w-36">
         <DropdownMenuRadioGroup value={theme} onValueChange={setTheme}>
-          <DropdownMenuRadioItem value="light">
+          <DropdownMenuRadioItem value="light" closeOnClick>
             <Sun />
             浅色
           </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="dark">
+          <DropdownMenuRadioItem value="dark" closeOnClick>
             <Moon />
             深色
           </DropdownMenuRadioItem>
-          <DropdownMenuRadioItem value="system">
+          <DropdownMenuRadioItem value="system" closeOnClick>
             <Monitor />
             跟随系统
           </DropdownMenuRadioItem>
