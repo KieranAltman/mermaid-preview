@@ -103,6 +103,8 @@ type Actions = {
   switchCanvas: (id: string) => void
   removeCanvas: (id: string) => RemovedCanvas | null
   restoreCanvas: (removed: RemovedCanvas) => void
+  /** Moves a canvas to `index`; the default canvas stays first and can't be moved. */
+  moveCanvas: (id: string, index: number) => void
   moveDiagramsToCanvas: (ids: string[], canvasId: string) => void
   zoomAt: (zoom: number, point: { x: number; y: number }) => void
   updateSettings: (patch: Partial<Settings>) => void
@@ -223,6 +225,9 @@ function freeSpot(diagrams: Diagram[], x: number, y: number) {
 }
 
 const DEFAULT_CANVAS: Canvas = { id: "default", name: "默认画布", viewport: { x: 0, y: 0, zoom: 1 } }
+
+/** The first index a canvas can be moved to: past the default canvas, which is pinned on top while it exists. */
+export const firstMovable = (canvases: Canvas[]) => (canvases[0]?.id === DEFAULT_CANVAS.id ? 1 : 0)
 
 const seed: Diagram[] = [
   {
@@ -440,6 +445,17 @@ export const useCanvasStore = create<State & Actions>()(
           canvases.splice(Math.min(index, canvases.length), 0, canvas)
           const next = { ...state, canvases, diagrams: [...state.diagrams, ...diagrams] }
           return { ...next, ...switchTo(next, canvas.id) }
+        }),
+
+      moveCanvas: (id, index) =>
+        set((state) => {
+          const from = state.canvases.findIndex((c) => c.id === id)
+          const first = firstMovable(state.canvases)
+          const to = clamp(index, first, state.canvases.length - 1)
+          if (from < first || to === from) return {}
+          const canvases = [...state.canvases]
+          canvases.splice(to, 0, ...canvases.splice(from, 1))
+          return { canvases }
         }),
 
       moveDiagramsToCanvas: (ids, canvasId) =>

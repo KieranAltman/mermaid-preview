@@ -31,8 +31,11 @@ names one canvas, not the app.
 - Undoing a deletion restores into the original canvas and switches to it,
   so the undo is visible.
 - The localStorage key stays `mermaid-canvas` so existing data still loads.
+- Canvases can be reordered: press and hold a row, then drag it, or use 上移 /
+  下移 in its menu. The default canvas stays first and can't be moved. Once
+  it's deleted, every canvas can move; undo puts it back on top.
 
 ## Not in the first version
 
-Reordering canvases, duplicating a canvas, shortcuts for switching, searching
-across canvases, and syncing canvases between browser tabs.
+Duplicating a canvas, shortcuts for switching, searching across canvases,
+and syncing canvases between browser tabs.

@@ -217,9 +217,11 @@
   * {
     @apply border-border outline-ring/50;
   }
-  /* While a layer is dragged, the whole page shows the grab and nothing selects. */
+  /* While a layer or a canvas is dragged, the whole page shows the grab and nothing selects. */
   [data-layer-drag],
-  [data-layer-drag] * {
+  [data-layer-drag] *,
+  [data-canvas-sort],
+  [data-canvas-sort] * {
     cursor: grabbing !important;
     user-select: none;
   }

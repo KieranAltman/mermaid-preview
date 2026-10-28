@@ -95,7 +95,7 @@ export function LayersPanel() {
       <CanvasList />
 
       {/* Laid out like the canvas heading, so the two plus buttons line up. */}
-      <div className="flex shrink-0 items-center gap-1 pt-3 pr-3 pb-1 pl-4">
+      <div className="flex shrink-0 items-center gap-1 pt-3 pr-3 pl-4">
         <h2 className="flex-1 text-xs font-medium text-muted-foreground">
           图层 <span className="tabular-nums">· {count}</span>
         </h2>
@@ -103,7 +103,8 @@ export function LayersPanel() {
       </div>
 
       <ScrollArea className="min-h-0 flex-1">
-        <div className="px-3 pb-3">
+        {/* Top padding leaves room for the first row's focus ring inside the scroll area. */}
+        <div className="px-3 pt-1 pb-3">
           <DiagramList />
         </div>
       </ScrollArea>

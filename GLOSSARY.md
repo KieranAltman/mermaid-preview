@@ -17,5 +17,5 @@ The canvas being viewed and edited; new diagrams go into it.
 _Avoid_: Active canvas, open canvas
 
 **Default canvas**:
-The canvas created for a user who has none yet. An ordinary canvas in every other respect.
+The canvas created for a user who has none yet. Always listed first while it exists; otherwise ordinary: it can be renamed and deleted.
 _Avoid_: Root canvas, inbox
