@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react"
 
-import { useCanvasStore } from "@/lib/store"
+import { useCanvasStore, type Canvas } from "@/lib/store"
 
 // Browsers cap localStorage near 5 MB per site, counted in characters. No API
 // reports the real quota, so the figures are an estimate against this.
@@ -47,6 +47,19 @@ export function useStorageUsage() {
     }
   }, [])
   return used
+}
+
+export type CanvasUsage = { canvas: Canvas; diagrams: number; size: number }
+
+/** Roughly what each canvas takes of the saved state: its own entry and its diagrams', in characters. */
+export function useCanvasUsage(): CanvasUsage[] {
+  const canvases = useCanvasStore((s) => s.canvases)
+  const diagrams = useCanvasStore((s) => s.diagrams)
+  return canvases.map((canvas) => {
+    const own = diagrams.filter((d) => d.canvasId === canvas.id)
+    const size = own.reduce((sum, d) => sum + JSON.stringify(d).length, JSON.stringify(canvas).length)
+    return { canvas, diagrams: own.length, size }
+  })
 }
 
 export function storageLevel(used: number): StorageLevel {
