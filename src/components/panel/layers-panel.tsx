@@ -76,6 +76,9 @@ function Logo() {
   )
 }
 
+const footerLink =
+  "font-medium text-foreground underline decoration-border underline-offset-2 transition-colors duration-150 hover:decoration-foreground"
+
 export function LayersPanel() {
   const count = useCanvasStore((s) => currentDiagrams(s).length)
   const open = useCanvasStore((s) => s.panels.layers)
@@ -112,17 +115,20 @@ export function LayersPanel() {
       <StorageUsage />
       <LayerDragGhost />
 
-      <footer className="shrink-0 border-t px-4 py-2.5 text-xs text-muted-foreground">
-        由{" "}
-        <a
-          href="https://pele.run"
-          target="_blank"
-          rel="noreferrer"
-          className="font-medium text-foreground underline decoration-border underline-offset-2 transition-colors duration-150 hover:decoration-foreground"
-        >
-          Pele
-        </a>{" "}
-        渲染 · 自动保存在本机
+      <footer className="flex shrink-0 items-center justify-between gap-3 border-t px-4 py-2.5 text-xs text-muted-foreground">
+        <span className="truncate">
+          由{" "}
+          <a href="https://pele.run" target="_blank" rel="noreferrer" className={footerLink}>
+            Pele
+          </a>{" "}
+          渲染
+        </span>
+        <span className="shrink-0">
+          © {new Date().getFullYear()}{" "}
+          <a href="https://x.com/KieranAltman" target="_blank" rel="noreferrer" className={footerLink}>
+            Kieran
+          </a>
+        </span>
       </footer>
     </Panel>
   )

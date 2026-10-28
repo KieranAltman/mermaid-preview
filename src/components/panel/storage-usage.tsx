@@ -1,5 +1,7 @@
 "use client"
 
+import { HardDrive } from "lucide-react"
+
 import { LevelIcon, StorageDialogContent, levelMessage, levelText } from "@/components/panel/storage-dialog"
 import { Dialog, DialogTrigger } from "@/components/ui/dialog"
 import { STORAGE_LIMIT, formatPercent, formatSize, storageLevel, useStorageUsage, type StorageLevel } from "@/lib/storage-usage"
@@ -27,6 +29,8 @@ export function StorageUsage() {
         >
           <span className="flex items-center justify-between gap-3 text-xs text-muted-foreground">
             <span className="flex items-center gap-1">
+              {/* As tall as the 12px label beside it. */}
+              <HardDrive aria-hidden className="size-3 shrink-0" />
               本地存储
               <LevelIcon level={level} />
             </span>
