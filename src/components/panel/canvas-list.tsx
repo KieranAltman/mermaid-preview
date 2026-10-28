@@ -29,6 +29,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import { useLanded, useLayerDrag } from "@/components/panel/layer-drag"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip"
 import { createCanvas, deleteCanvas, openCanvas } from "@/lib/canvases"
@@ -173,6 +174,12 @@ function CanvasRow({
     onRename()
   }
 
+  const over = useLayerDrag((drag) => drag?.target?.kind === "canvas" && drag.target.id === canvas.id)
+  const incoming = useLayerDrag((drag) => (over ? (drag?.ids.length ?? 0) : 0))
+  // The current canvas is where the layers already are, so it takes no drop.
+  const dimmed = useLayerDrag((drag) => current && !!drag && !drag.settling)
+  const landedAt = useLanded(canvas.id)
+
   if (renaming) {
     return (
       <li>
@@ -183,7 +190,18 @@ function CanvasRow({
 
   return (
     <ContextMenu>
-      <ContextMenuTrigger render={<li className="group/row relative" />}>
+      <ContextMenuTrigger
+        render={
+          <li
+            data-drop-canvas={canvas.id}
+            data-drop={over ? "over" : landedAt ? "landed" : undefined}
+            className={cn(
+              "group/row relative transition-opacity duration-150 motion-reduce:transition-none",
+              dimmed && "opacity-50"
+            )}
+          />
+        }
+      >
         <button
           type="button"
           aria-current={current || undefined}
@@ -198,10 +216,32 @@ function CanvasRow({
         >
           <span className="min-w-0 flex-1 truncate">{canvas.name}</span>
         </button>
+        {/* Lit while layers hover to drop here; fades once they've landed. */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-md bg-selection/10 opacity-0 ring-1 ring-selection/60 transition-opacity duration-150 ring-inset group-data-[drop=over]/row:opacity-100 motion-reduce:transition-none"
+        />
+        {/* While dropping and just after, the count tells what the drop does, and then that it did. */}
+        {over ? (
+          <span
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs font-medium text-selection tabular-nums"
+          >
+            +{incoming}
+          </span>
+        ) : landedAt ? (
+          <span
+            key={landedAt}
+            aria-hidden
+            className="pointer-events-none absolute inset-y-0 right-2 flex animate-count-bump items-center text-xs text-selection tabular-nums motion-reduce:animate-none"
+          >
+            {count}
+          </span>
+        ) : null}
         {/* The count gives way to the menu button on hover and keyboard focus; touch always shows the button. */}
         <span
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground tabular-nums group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0 group-has-data-popup-open/row:opacity-0 pointer-coarse:opacity-0"
+          className="pointer-events-none absolute inset-y-0 right-2 flex items-center text-xs text-muted-foreground tabular-nums group-hover/row:opacity-0 group-has-[:focus-visible]/row:opacity-0 group-has-data-popup-open/row:opacity-0 group-data-[drop]/row:invisible pointer-coarse:opacity-0"
         >
           {count}
         </span>
@@ -213,7 +253,7 @@ function CanvasRow({
                 size="icon-xs"
                 aria-label={`「${canvas.name}」的更多操作`}
                 // Grown to the row's full 32px height to tap, without reaching the rows around it.
-                className="absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] data-popup-open:opacity-100 pointer-coarse:opacity-100"
+                className="absolute top-1 right-1 opacity-0 group-hover/row:opacity-100 group-has-[:focus-visible]/row:opacity-100 before:absolute before:-inset-[5px] group-data-[drop]/row:invisible in-data-[layer-drag]:invisible data-popup-open:opacity-100 pointer-coarse:opacity-100"
               />
             }
           >
@@ -260,6 +300,7 @@ export function CanvasList() {
   const [confirming, setConfirming] = useState<Canvas | null>(null)
   const [confirmOpen, setConfirmOpen] = useState(false)
   const current = canvases.find((c) => c.id === currentId)
+  const dropNew = useLayerDrag((drag) => drag?.target?.kind === "new")
 
   const requestDelete = (canvas: Canvas) => {
     // Nothing is lost with an empty canvas; undo still covers a slip.
@@ -284,6 +325,7 @@ export function CanvasList() {
           type="button"
           aria-expanded={open}
           aria-controls="canvas-list"
+          data-drop-expand={!open || undefined}
           onClick={() => setOpen(!open)}
           className="flex h-7 min-w-0 items-center gap-1 rounded-md px-1 text-xs font-medium text-muted-foreground transition-colors duration-150 outline-none hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring/50"
         >
@@ -303,8 +345,10 @@ export function CanvasList() {
                 variant="ghost"
                 size="icon-sm"
                 aria-label="新建画布"
+                data-drop-canvas="new"
+                data-drop-over={dropNew || undefined}
                 // 28px button, 36px to hit; the inset counts from inside its 1px border.
-                className="relative before:absolute before:-inset-[5px]"
+                className="relative before:absolute before:-inset-[5px] data-drop-over:bg-selection/15! data-drop-over:text-selection!"
                 onClick={() => {
                   setOpen(true)
                   setRenamingId(createCanvas())
