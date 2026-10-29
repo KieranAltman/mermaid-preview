@@ -8,6 +8,15 @@ export type PeleVars = {
   "--pele-border": string
   "--pele-accent": string
   "--pele-critical": string
+  // Charts color their series (timeline periods, pie slices, Git branches…) from these, in order.
+  "--pele-series-1": string
+  "--pele-series-2": string
+  "--pele-series-3": string
+  "--pele-series-4": string
+  "--pele-series-5": string
+  "--pele-series-6": string
+  "--pele-series-7": string
+  "--pele-series-8": string
 }
 
 export type DiagramTheme = {
@@ -17,6 +26,11 @@ export type DiagramTheme = {
   dark: PeleVars
 }
 
+// Series colors share one lightness per mode, each at a fixed share of its hue's sRGB chroma
+// ceiling (OKLCH), so none jumps out. Neutral keeps to cool hues (slate blue, teal, lavender;
+// docs/decisions/series-palette.md); blueprint and forest lean to their own hues; Flexoki uses
+// its own accents, a step darker or lighter where a label needed it. Light series keep a
+// white label at 4.5:1 or better, dark ones a dark label.
 export const diagramThemes: DiagramTheme[] = [
   {
     id: "neutral",
@@ -31,6 +45,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#b9bcc3",
       "--pele-accent": "#3b6fd8",
       "--pele-critical": "#d64545",
+      "--pele-series-1": "#4f6c8a",
+      "--pele-series-2": "#51706f",
+      "--pele-series-3": "#635ea7",
+      "--pele-series-4": "#517165",
+      "--pele-series-5": "#506e7c",
+      "--pele-series-6": "#7b5696",
+      "--pele-series-7": "#516f74",
+      "--pele-series-8": "#4a66a6",
     },
     dark: {
       "--pele-bg": "#1b1c1f",
@@ -42,6 +64,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#4a4c53",
       "--pele-accent": "#7096e0",
       "--pele-critical": "#d86a6a",
+      "--pele-series-1": "#9db7d3",
+      "--pele-series-2": "#8dbfbe",
+      "--pele-series-3": "#b0b0d3",
+      "--pele-series-4": "#8dc1ae",
+      "--pele-series-5": "#8ebcd3",
+      "--pele-series-6": "#c1aad3",
+      "--pele-series-7": "#8dbec7",
+      "--pele-series-8": "#a6b4d3",
     },
   },
   {
@@ -57,6 +87,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#cecdc3",
       "--pele-accent": "#205ea6",
       "--pele-critical": "#af3029",
+      "--pele-series-1": "#205ea6",
+      "--pele-series-2": "#bc5215",
+      "--pele-series-3": "#536907",
+      "--pele-series-4": "#a02f6f",
+      "--pele-series-5": "#1c6c66",
+      "--pele-series-6": "#8e6b01",
+      "--pele-series-7": "#5e409d",
+      "--pele-series-8": "#af3029",
     },
     dark: {
       "--pele-bg": "#100f0f",
@@ -68,6 +106,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#403e3c",
       "--pele-accent": "#4385be",
       "--pele-critical": "#d14d41",
+      "--pele-series-1": "#4385be",
+      "--pele-series-2": "#da702c",
+      "--pele-series-3": "#879a39",
+      "--pele-series-4": "#ce5d97",
+      "--pele-series-5": "#3aa99f",
+      "--pele-series-6": "#d0a215",
+      "--pele-series-7": "#8b7ec8",
+      "--pele-series-8": "#e8705f",
     },
   },
   {
@@ -83,6 +129,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#8aa6d6",
       "--pele-accent": "#2f5ba8",
       "--pele-critical": "#c2413b",
+      "--pele-series-1": "#516b8c",
+      "--pele-series-2": "#547068",
+      "--pele-series-3": "#725b9a",
+      "--pele-series-4": "#81614f",
+      "--pele-series-5": "#536e77",
+      "--pele-series-6": "#5b7050",
+      "--pele-series-7": "#855680",
+      "--pele-series-8": "#736850",
     },
     dark: {
       "--pele-bg": "#121a2a",
@@ -94,6 +148,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#3b5480",
       "--pele-accent": "#7ea2dc",
       "--pele-critical": "#d97570",
+      "--pele-series-1": "#9eb3ce",
+      "--pele-series-2": "#8fbcaf",
+      "--pele-series-3": "#b6aace",
+      "--pele-series-4": "#d0a791",
+      "--pele-series-5": "#8eb9c7",
+      "--pele-series-6": "#9bbd8a",
+      "--pele-series-7": "#d09ecb",
+      "--pele-series-8": "#c2af89",
     },
   },
   {
@@ -109,6 +171,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#a6b89b",
       "--pele-accent": "#4b7a3f",
       "--pele-critical": "#b5452f",
+      "--pele-series-1": "#54734d",
+      "--pele-series-2": "#83604c",
+      "--pele-series-3": "#516f74",
+      "--pele-series-4": "#935459",
+      "--pele-series-5": "#6e6a4d",
+      "--pele-series-6": "#82558c",
+      "--pele-series-7": "#517168",
+      "--pele-series-8": "#7a654d",
     },
     dark: {
       "--pele-bg": "#151a15",
@@ -120,6 +190,14 @@ export const diagramThemes: DiagramTheme[] = [
       "--pele-border": "#435140",
       "--pele-accent": "#8fb87f",
       "--pele-critical": "#d77b66",
+      "--pele-series-1": "#90c185",
+      "--pele-series-2": "#d3a68e",
+      "--pele-series-3": "#8abbc4",
+      "--pele-series-4": "#d3a3a5",
+      "--pele-series-5": "#bab384",
+      "--pele-series-6": "#c8a1d1",
+      "--pele-series-7": "#8bbdaf",
+      "--pele-series-8": "#cdaa84",
     },
   },
 ]
